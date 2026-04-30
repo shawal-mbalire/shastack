@@ -2,6 +2,7 @@ pub mod add;
 pub mod deps;
 pub mod docs;
 pub mod env;
+pub mod issue;
 pub mod new;
 pub mod pulse;
 pub mod registry;
@@ -87,6 +88,21 @@ pub enum Commands {
         #[arg(long)]
         std: bool,
     },
+    /// Enforces Issue-Driven Development workflows
+    Issue {
+        #[command(subcommand)]
+        action: IssueAction,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum IssueAction {
+    /// Starts a new issue by creating a branch
+    Start { id: u64, description: String },
+    /// Shows the current issue context
+    Status,
+    /// Finalizes the current issue and prepares for PR
+    Finish,
 }
 
 #[derive(Subcommand)]
