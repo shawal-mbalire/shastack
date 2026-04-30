@@ -11,4 +11,6 @@
 - [x] #35: Implement Modular CI/CD Standards
 - [x] #36: Implement Observability & Logging (The Pulse)
 - [x] #37: Implement ML & Research Rigor Features
-- [ ] #38: Optimize for rustup docs
+- [x] #38: Optimize for rustup docs
+- [ ] #44: Cross-platform one-liner install script
+- [ ] #45: Auto-installation of workspace dependencies
