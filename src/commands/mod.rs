@@ -1,6 +1,7 @@
 pub mod add;
 pub mod env;
 pub mod new;
+pub mod pulse;
 pub mod sync_api;
 pub mod version;
 pub mod wrappers;
@@ -65,6 +66,8 @@ pub enum Commands {
     },
     /// Automatically generates clients from Zod/Pydantic definitions
     SyncApi,
+    /// Checks health and heartbeats of the workspace modules
+    Pulse,
 }
 
 #[derive(Subcommand)]

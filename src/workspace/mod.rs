@@ -55,6 +55,7 @@ fn create_feature_dir(root: &Path, feature: &str) -> Result<()> {
         "ml" | "ML (Python/Notebooks)" => {
             fs::create_dir_all(root.join("ml/notebooks"))?;
             fs::create_dir_all(root.join("ml/src"))?;
+            fs::write(root.join("ml/heartbeat.json"), "{\"status\": \"initialized\"}")?;
             "ml"
         }
         "hardware" | "Hardware (Firmware)" => {
