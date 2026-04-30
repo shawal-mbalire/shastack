@@ -51,6 +51,9 @@ fn main() -> Result<()> {
         Commands::Docs { feature, std } => {
             commands::docs::exec(feature, std)?;
         }
+        Commands::Issue { action } => {
+            commands::issue::exec(action)?;
+        }
     }
 
     Ok(())
