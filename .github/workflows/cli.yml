@@ -1,0 +1,20 @@
+name: CLI CI
+
+on:
+  push:
+    paths:
+      - 'cli/**'
+  pull_request:
+    paths:
+      - 'cli/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - name: Install dependencies
+        run: cd cli && bun install
+      - name: Check Types
+        run: cd cli && bun x tsc --noEmit

@@ -2,6 +2,10 @@
   "name": "shastack",
   "version": "0.1.0",
   "modules": {
+    "cli": {
+      "enabled": true,
+      "path": "cli"
+    },
     "web": {
       "enabled": true,
       "path": "web"
