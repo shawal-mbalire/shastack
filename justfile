@@ -16,3 +16,7 @@ new module:
 setup:
     @just deps
     @echo "shastack ready."
+
+# Dry-run semantic release
+release-dry:
+    @npx semantic-release --dry-run

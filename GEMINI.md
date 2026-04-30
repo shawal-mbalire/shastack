@@ -10,7 +10,10 @@
     ```bash
     git checkout -b issue-[ID]-[slug]
     ```
-3.  **Development:** Follow standard execution cycles. Every commit must end with `#[ID]`.
+3.  **Development:** Follow standard execution cycles. Every commit must follow **Conventional Commits** and end with `#[ID]`.
+    - `feat: ... #[ID]` -> Minor version bump
+    - `fix: ... #[ID]` -> Patch version bump
+    - `feat!: ... #[ID]` -> Major version bump (Breaking Change)
 4.  **Create PR:** Once work is validated.
     ```bash
     gh pr create --title "feat: description #[ID]" --body "Details of changes"
