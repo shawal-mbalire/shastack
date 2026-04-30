@@ -83,6 +83,52 @@ pub fn set_version(root: &Path, version: &Version) -> Result<()> {
     Ok(())
 }
 
+pub fn get_env(root: &Path, key: &str) -> Result<Option<String>> {
+    let env_path = root.join(".env.sha");
+    if !env_path.exists() {
+        return Ok(None);
+    }
+    let content = fs::read_to_string(env_path)?;
+    for line in content.lines() {
+        if let Some((k, v)) = line.split_once('=') {
+            if k.trim() == key {
+                return Ok(Some(v.trim().to_string()));
+            }
+        }
+    }
+    Ok(None)
+}
+
+pub fn set_env(root: &Path, key: &str, value: &str) -> Result<()> {
+    let env_path = root.join(".env.sha");
+    let mut lines: Vec<String> = if env_path.exists() {
+        fs::read_to_string(&env_path)?
+            .lines()
+            .map(|s| s.to_string())
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    let mut found = false;
+    for line in lines.iter_mut() {
+        if let Some((k, _)) = line.split_once('=') {
+            if k.trim() == key {
+                *line = format!("{}={}", key, value);
+                found = true;
+                break;
+            }
+        }
+    }
+
+    if !found {
+        lines.push(format!("{}={}", key, value));
+    }
+
+    fs::write(env_path, lines.join("\n") + "\n")?;
+    Ok(())
+}
+
 pub fn init(name: &str, features: Vec<&str>) -> Result<()> {
     let root = Path::new(name);
     if root.exists() {
@@ -188,6 +234,28 @@ mod tests {
         version.patch += 1;
         set_version(&workspace_path, &version)?;
         assert_eq!(get_version(&workspace_path)?, Version::parse("0.1.1")?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_env_management() -> Result<()> {
+        let dir = tempdir()?;
+        let workspace_path = dir.path().join("test_env_ws");
+        let workspace_name = workspace_path.to_str().unwrap();
+
+        init(workspace_name, vec![])?;
+        set_env(&workspace_path, "TEST_KEY", "TEST_VALUE")?;
+        assert_eq!(
+            get_env(&workspace_path, "TEST_KEY")?,
+            Some("TEST_VALUE".to_string())
+        );
+
+        set_env(&workspace_path, "TEST_KEY", "UPDATED_VALUE")?;
+        assert_eq!(
+            get_env(&workspace_path, "TEST_KEY")?,
+            Some("UPDATED_VALUE".to_string())
+        );
 
         Ok(())
     }
