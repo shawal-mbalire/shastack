@@ -9,16 +9,16 @@
 - [x] #04: Secret Management (sha env)
 
 ## Phase 3: Module Scaffolding
-- [x] #05: Web Module (web/client - Angular, web/server - Hono/Flask)
-- [x] #06: ML Module (ml/notebooks, ml/src using uv)
-- [x] #07: Research Module (Modular LaTeX)
-- [x] #08: Hardware Module (C++/MicroPython)
-- [x] #09: Mobile Module (To be defined)
-- [x] #10: Infrastructure Module (Terraform/Pulumi)
+- [x] #05: Web Module
+- [x] #06: ML Module
+- [x] #07: Research Module
+- [x] #08: Hardware Module
+- [x] #09: Mobile Module
+- [x] #10: Infrastructure Module
 
-## Phase 4: Integration & Hardening
-- [ ] #11: Cross-Module Communication (Event Bus/API)
-- [ ] #12: Performance Benchmarking
-- [ ] #13: Security Hardening & Audit
-- [ ] #14: Documentation & Developer Experience
-- [ ] #15: Final Release (v1.0.0)
+## Phase 4: Integration & Hardening (GitHub Issues)
+- [ ] #1: Cross-Module Communication (Event Bus/API)
+- [ ] #2: Performance Benchmarking
+- [ ] #3: Security Hardening & Audit
+- [ ] #4: Documentation & Developer Experience
+- [ ] #5: Final Release (v1.0.0)
