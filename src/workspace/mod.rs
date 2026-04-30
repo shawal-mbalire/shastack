@@ -50,11 +50,13 @@ fn create_feature_dir(root: &Path, feature: &str) -> Result<()> {
         }
         "research" | "Research (LaTeX)" => {
             fs::create_dir_all(root.join("research/src"))?;
+            fs::create_dir_all(root.join("research/artifacts"))?;
             "research"
         }
         "ml" | "ML (Python/Notebooks)" => {
             fs::create_dir_all(root.join("ml/notebooks"))?;
             fs::create_dir_all(root.join("ml/src"))?;
+            fs::create_dir_all(root.join("ml/model_registry"))?;
             fs::write(root.join("ml/heartbeat.json"), "{\"status\": \"initialized\"}")?;
             "ml"
         }

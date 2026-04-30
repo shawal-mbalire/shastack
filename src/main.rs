@@ -42,6 +42,9 @@ fn main() -> Result<()> {
         Commands::Pulse => {
             commands::pulse::exec()?;
         }
+        Commands::Registry { action } => {
+            commands::registry::exec(action)?;
+        }
     }
 
     Ok(())
