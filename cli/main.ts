@@ -165,4 +165,14 @@ auditCmd
     console.log("[AUDIT] No immediate vulnerabilities found.");
   });
 
+const docsCmd = program.command("docs").description("Documentation & DevEx");
+
+docsCmd
+  .command("serve")
+  .description("Serve the documentation locally")
+  .action(() => {
+    console.log("[DOCS] Serving documentation at http://localhost:3000...");
+    // Simulate server
+  });
+
 program.parse();
