@@ -29,6 +29,10 @@
     "bench": {
       "enabled": true,
       "path": "bench"
+    },
+    "audit": {
+      "enabled": true,
+      "path": "audit"
     }
   }
 }
