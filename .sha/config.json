@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "modules": {
     "web": {
-      "enabled": false,
+      "enabled": true,
       "path": "web"
     },
     "ml": {
