@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/shawal-mbalire/shastack/compare/v1.1.0...v1.2.0) (2026-04-30)
+
+
+### Features
+
+* **cli:** register cli as a formal module [#15](https://github.com/shawal-mbalire/shastack/issues/15) ([883e434](https://github.com/shawal-mbalire/shastack/commit/883e43460ac6329118557569bdc55472c970b721))
+
 # [1.1.0](https://github.com/shawal-mbalire/shastack/compare/v1.0.0...v1.1.0) (2026-04-30)
 
 
