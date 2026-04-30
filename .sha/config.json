@@ -19,7 +19,7 @@
       "path": "hardware"
     },
     "mobile": {
-      "enabled": false,
+      "enabled": true,
       "path": "mobile"
     }
   }
