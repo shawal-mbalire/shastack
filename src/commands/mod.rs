@@ -1,4 +1,5 @@
 pub mod add;
+pub mod docs;
 pub mod env;
 pub mod new;
 pub mod pulse;
@@ -73,6 +74,15 @@ pub enum Commands {
     Registry {
         #[command(subcommand)]
         action: RegistryAction,
+    },
+    /// Opens rustup documentation and project documentation
+    Docs {
+        /// Feature to open docs for
+        #[arg(long)]
+        feature: Option<String>,
+        /// Open standard library docs
+        #[arg(long)]
+        std: bool,
     },
 }
 
