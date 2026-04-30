@@ -69,4 +69,57 @@ program
     // For now, let's just log the intent as this is a scaffold.
   });
 
+const ENV_PATH = ".env.sha";
+
+function loadEnv() {
+  if (!existsSync(ENV_PATH)) return {};
+  const content = readFileSync(ENV_PATH, "utf-8");
+  return content.split("\n").reduce((acc: any, line) => {
+    const [key, ...value] = line.split("=");
+    if (key) acc[key.trim()] = value.join("=").trim();
+    return acc;
+  }, {});
+}
+
+function saveEnv(env: any) {
+  const content = Object.entries(env)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+  writeFileSync(ENV_PATH, content + "\n");
+}
+
+const envCmd = program.command("env").description("Manage environment secrets");
+
+envCmd
+  .command("set <key> <value>")
+  .description("Set an environment variable")
+  .action((key, value) => {
+    const env = loadEnv();
+    env[key] = value;
+    saveEnv(env);
+    console.log(`Set ${key}=${value} in ${ENV_PATH}`);
+  });
+
+envCmd
+  .command("get <key>")
+  .description("Get an environment variable")
+  .action((key) => {
+    const env = loadEnv();
+    if (env[key]) {
+      console.log(env[key]);
+    } else {
+      console.error(`Error: ${key} not found in ${ENV_PATH}`);
+    }
+  });
+
+envCmd
+  .command("list")
+  .description("List all environment variables")
+  .action(() => {
+    const env = loadEnv();
+    Object.entries(env).forEach(([key, value]) => {
+      console.log(`${key}=${value}`);
+    });
+  });
+
 program.parse();
