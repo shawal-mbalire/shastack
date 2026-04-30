@@ -122,4 +122,22 @@ envCmd
     });
   });
 
+const busCmd = program.command("bus").description("Cross-module event bus");
+
+busCmd
+  .command("emit <event> [payload]")
+  .description("Emit an event to the bus")
+  .action((event, payload) => {
+    console.log(`[BUS] Emitting event: ${event} with payload: ${payload || "{}"}`);
+    // In a real implementation, this could write to a socket or message queue
+  });
+
+busCmd
+  .command("listen <event>")
+  .description("Listen for an event on the bus")
+  .action((event) => {
+    console.log(`[BUS] Listening for event: ${event}...`);
+    // Persistent listener logic
+  });
+
 program.parse();
