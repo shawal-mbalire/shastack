@@ -33,6 +33,10 @@
     "audit": {
       "enabled": true,
       "path": "audit"
+    },
+    "docs": {
+      "enabled": true,
+      "path": "docs"
     }
   }
 }
