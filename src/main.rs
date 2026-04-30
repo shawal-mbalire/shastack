@@ -36,6 +36,9 @@ fn main() -> Result<()> {
         Commands::Deploy { feature, target } => {
             commands::wrappers::deploy(feature, target)?;
         }
+        Commands::SyncApi => {
+            commands::sync_api::exec()?;
+        }
     }
 
     Ok(())

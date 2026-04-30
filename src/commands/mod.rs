@@ -1,6 +1,7 @@
 pub mod add;
 pub mod env;
 pub mod new;
+pub mod sync_api;
 pub mod version;
 pub mod wrappers;
 
@@ -62,6 +63,8 @@ pub enum Commands {
         #[arg(long)]
         target: String,
     },
+    /// Automatically generates clients from Zod/Pydantic definitions
+    SyncApi,
 }
 
 #[derive(Subcommand)]
