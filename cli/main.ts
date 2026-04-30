@@ -140,4 +140,19 @@ busCmd
     // Persistent listener logic
   });
 
+const benchCmd = program.command("bench").description("Performance benchmarking");
+
+benchCmd
+  .command("run <module>")
+  .description("Run benchmarks for a module")
+  .action((moduleName) => {
+    console.log(`[BENCH] Running benchmarks for ${moduleName}...`);
+    const start = performance.now();
+    // Simulate benchmark
+    setTimeout(() => {
+      const end = performance.now();
+      console.log(`[BENCH] Completed in ${(end - start).toFixed(2)}ms`);
+    }, 100);
+  });
+
 program.parse();

@@ -25,6 +25,10 @@
     "infra": {
       "enabled": true,
       "path": "infra"
+    },
+    "bench": {
+      "enabled": true,
+      "path": "bench"
     }
   }
 }
