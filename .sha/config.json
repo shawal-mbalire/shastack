@@ -7,7 +7,7 @@
       "path": "web"
     },
     "ml": {
-      "enabled": false,
+      "enabled": true,
       "path": "ml"
     },
     "research": {
