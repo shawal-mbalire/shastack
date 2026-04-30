@@ -11,7 +11,7 @@
       "path": "ml"
     },
     "research": {
-      "enabled": false,
+      "enabled": true,
       "path": "research"
     },
     "hardware": {
