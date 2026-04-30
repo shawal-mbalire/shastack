@@ -1,6 +1,68 @@
 use anyhow::Result;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+pub fn find_root() -> Result<PathBuf> {
+    let mut current = std::env::current_dir()?;
+    loop {
+        if current.join(".sha/config.json").exists() {
+            return Ok(current);
+        }
+        if !current.pop() {
+            break;
+        }
+    }
+    Err(anyhow::anyhow!("Not a shastack workspace (no .sha/config.json found)"))
+}
+
+pub fn add_feature(root: &Path, feature: &str) -> Result<()> {
+    let config_path = root.join(".sha/config.json");
+    let mut manifest: serde_json::Value = serde_json::from_str(&fs::read_to_string(&config_path)?)?;
+
+    let features = manifest["features"]
+        .as_array_mut()
+        .ok_or_else(|| anyhow::anyhow!("Invalid config.json"))?;
+
+    if features.iter().any(|f| f == feature) {
+        return Err(anyhow::anyhow!("Feature {} already exists", feature));
+    }
+
+    features.push(serde_json::json!(feature));
+
+    // Create feature directory
+    create_feature_dir(root, feature)?;
+
+    fs::write(config_path, serde_json::to_string_pretty(&manifest)?)?;
+
+    Ok(())
+}
+
+fn create_feature_dir(root: &Path, feature: &str) -> Result<()> {
+    match feature {
+        "web" | "Web Frontend (Angular)" | "Web Backend (Flask)" => {
+            fs::create_dir_all(root.join("web/client"))?;
+            fs::create_dir_all(root.join("web/server"))?;
+        }
+        "mobile" | "Mobile App (Flutter)" => {
+            fs::create_dir_all(root.join("mobile/app"))?;
+        }
+        "research" | "Research (LaTeX)" => {
+            fs::create_dir_all(root.join("research/src"))?;
+        }
+        "ml" | "ML (Python/Notebooks)" => {
+            fs::create_dir_all(root.join("ml/notebooks"))?;
+            fs::create_dir_all(root.join("ml/src"))?;
+        }
+        "hardware" | "Hardware (Firmware)" => {
+            fs::create_dir_all(root.join("hardware/src"))?;
+        }
+        _ => {
+            // Generic feature directory
+            fs::create_dir_all(root.join(feature))?;
+        }
+    }
+    Ok(())
+}
 
 pub fn init(name: &str, features: Vec<&str>) -> Result<()> {
     let root = Path::new(name);
@@ -38,28 +100,7 @@ test:
 
     // Create feature directories
     for feature in features {
-        match feature {
-            "Web Frontend (Angular)" => {
-                fs::create_dir_all(root.join("web/client"))?;
-            }
-            "Web Backend (Flask)" => {
-                fs::create_dir_all(root.join("web/server"))?;
-            }
-            "Mobile App (Flutter)" => {
-                fs::create_dir_all(root.join("mobile/app"))?;
-            }
-            "Research (LaTeX)" => {
-                fs::create_dir_all(root.join("research/src"))?;
-            }
-            "ML (Python/Notebooks)" => {
-                fs::create_dir_all(root.join("ml/notebooks"))?;
-                fs::create_dir_all(root.join("ml/src"))?;
-            }
-            "Hardware (Firmware)" => {
-                fs::create_dir_all(root.join("hardware/src"))?;
-            }
-            _ => {}
-        }
+        create_feature_dir(root, feature)?;
     }
 
     // Create shared directory
@@ -90,6 +131,26 @@ mod tests {
         assert!(workspace_path.join("research/src").exists());
         assert!(workspace_path.join("justfile").exists());
         assert!(workspace_path.join(".env.sha").exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_add_feature() -> Result<()> {
+        let dir = tempdir()?;
+        let workspace_path = dir.path().join("test_add_ws");
+        let workspace_name = workspace_path.to_str().unwrap();
+
+        init(workspace_name, vec!["Web Frontend (Angular)"])?;
+        add_feature(&workspace_path, "Research (LaTeX)")?;
+
+        let config_path = workspace_path.join(".sha/config.json");
+        let manifest: serde_json::Value = serde_json::from_str(&fs::read_to_string(config_path)?)?;
+        let features = manifest["features"].as_array().unwrap();
+
+        assert!(features.contains(&serde_json::json!("Web Frontend (Angular)")));
+        assert!(features.contains(&serde_json::json!("Research (LaTeX)")));
+        assert!(workspace_path.join("research/src").exists());
 
         Ok(())
     }

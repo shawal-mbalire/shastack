@@ -13,7 +13,7 @@ fn main() -> Result<()> {
             commands::new::exec(name)?;
         }
         Commands::Add { feature } => {
-            println!("Adding feature: {}", feature);
+            commands::add::exec(feature)?;
         }
         Commands::Version { component } => {
             println!("Updating version: {:?}", component);
