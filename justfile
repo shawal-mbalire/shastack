@@ -4,13 +4,13 @@ set shell := ["bash", "-uc"]
 deps:
     @echo "Installing all dependencies via shastack..."
 
-# Run the sha CLI (requires Bun)
+# Run the sha CLI (requires Rust)
 sha *args:
-    @bun run cli/main.ts {{args}}
+    @cargo run --manifest-path cli/Cargo.toml -- {{args}}
 
 # Run the sha CLI in dry-run mode
 sha-dry *args:
-    @just sha --dry-run {{args}}
+    @cargo run --manifest-path cli/Cargo.toml -- --dry-run {{args}}
 
 # Initialize a new module
 new module:
