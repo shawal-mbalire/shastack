@@ -103,4 +103,6 @@ pub enum EnvAction {
     Set { key: String, value: String },
     /// Get an environment variable
     Get { key: String },
+    /// Lists all environment variables
+    List,
 }

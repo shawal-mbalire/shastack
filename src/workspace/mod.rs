@@ -119,6 +119,21 @@ pub fn get_env(root: &Path, key: &str) -> Result<Option<String>> {
     Ok(None)
 }
 
+pub fn list_envs(root: &Path) -> Result<Vec<(String, String)>> {
+    let env_path = root.join(".env.sha");
+    if !env_path.exists() {
+        return Ok(Vec::new());
+    }
+    let content = fs::read_to_string(env_path)?;
+    let mut envs = Vec::new();
+    for line in content.lines() {
+        if let Some((k, v)) = line.split_once('=') {
+            envs.push((k.trim().to_string(), v.trim().to_string()));
+        }
+    }
+    Ok(envs)
+}
+
 pub fn set_env(root: &Path, key: &str, value: &str) -> Result<()> {
     let env_path = root.join(".env.sha");
     let mut lines: Vec<String> = if env_path.exists() {

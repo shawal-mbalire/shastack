@@ -1,5 +1,6 @@
 use anyhow::Result;
 use colored::*;
+use comfy_table::Table;
 use crate::commands::RegistryAction;
 use crate::workspace;
 use std::fs;
@@ -40,12 +41,25 @@ pub fn exec(action: RegistryAction) -> Result<()> {
                 return Ok(());
             }
 
+            let mut table = Table::new();
+            table.set_header(vec!["Model", "Weight Path", "Git Hash", "Pinned At"]);
+
             for entry in fs::read_dir(registry_dir)? {
                 let entry = entry?;
                 if entry.path().is_dir() {
-                    println!("{}", format!("Model: {:?}", entry.file_name()).cyan());
+                    let metadata_path = entry.path().join("metadata.json");
+                    if metadata_path.exists() {
+                        let metadata: serde_json::Value = serde_json::from_str(&fs::read_to_string(metadata_path)?)?;
+                        table.add_row(vec![
+                            metadata["model"].as_str().unwrap_or("").cyan().to_string(),
+                            metadata["weight_path"].as_str().unwrap_or("").yellow().to_string(),
+                            metadata["git_hash"].as_str().unwrap_or("").magenta().to_string(),
+                            metadata["timestamp"].as_str().unwrap_or("").white().to_string(),
+                        ]);
+                    }
                 }
             }
+            println!("{table}");
         }
     }
 
