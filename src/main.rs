@@ -39,6 +39,9 @@ fn main() -> Result<()> {
         Commands::SyncApi => {
             commands::sync_api::exec()?;
         }
+        Commands::Deps => {
+            commands::deps::exec()?;
+        }
         Commands::Pulse => {
             commands::pulse::exec()?;
         }

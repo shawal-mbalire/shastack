@@ -176,8 +176,10 @@ pub fn init(name: &str, features: Vec<&str>) -> Result<()> {
 
 # --- Global Commands ---
 
+# Install project-wide and system-wide dependencies
 deps:
-    @echo "Installing dependencies..."
+    sha deps
+    @echo "Installing module dependencies..."
 
 test:
     @echo "Running tests..."
