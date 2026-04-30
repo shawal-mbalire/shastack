@@ -1,4 +1,5 @@
 pub mod add;
+pub mod deps;
 pub mod docs;
 pub mod env;
 pub mod new;
@@ -68,6 +69,8 @@ pub enum Commands {
     },
     /// Automatically generates clients from Zod/Pydantic definitions
     SyncApi,
+    /// Installs project-wide and system-wide dependencies
+    Deps,
     /// Checks health and heartbeats of the workspace modules
     Pulse,
     /// Manages the ML model registry and research artifacts
