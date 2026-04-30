@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/shawal-mbalire/shastack/compare/v1.3.0...v1.4.0) (2026-04-30)
+
+
+### Features
+
+* enhance CLI with auto-init and populate modules with boilerplate [#18](https://github.com/shawal-mbalire/shastack/issues/18) ([ed8ac1f](https://github.com/shawal-mbalire/shastack/commit/ed8ac1faa58a644b7755ecaddc56bb4b9106e056))
+
 # [1.3.0](https://github.com/shawal-mbalire/shastack/compare/v1.2.0...v1.3.0) (2026-04-30)
 
 
