@@ -1,3 +1,11 @@
+# [1.3.0](https://github.com/shawal-mbalire/shastack/compare/v1.2.0...v1.3.0) (2026-04-30)
+
+
+### Features
+
+* **cli:** rewrite shastack CLI in Rust [#17](https://github.com/shawal-mbalire/shastack/issues/17) ([c8d9576](https://github.com/shawal-mbalire/shastack/commit/c8d95763fd78dcb119a188588952f1930b45e8c2))
+* complete rust pivot with one-liner install [#16](https://github.com/shawal-mbalire/shastack/issues/16) ([93b5ff2](https://github.com/shawal-mbalire/shastack/commit/93b5ff220ef5678e3474cfd754c252ffd0b8a978))
+
 # [1.2.0](https://github.com/shawal-mbalire/shastack/compare/v1.1.0...v1.2.0) (2026-04-30)
 
 
