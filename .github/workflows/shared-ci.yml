@@ -1,0 +1,16 @@
+name: Shared CI
+on:
+  push:
+    paths: ['shared/**']
+  pull_request:
+    paths: ['shared/**']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@just
+      - name: Build
+        run: cd shared && just build
+      - name: Test
+        run: cd shared && just test

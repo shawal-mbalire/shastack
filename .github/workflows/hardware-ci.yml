@@ -1,0 +1,16 @@
+name: Hardware CI
+on:
+  push:
+    paths: ['hardware/**']
+  pull_request:
+    paths: ['hardware/**']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@just
+      - name: Build
+        run: cd hardware && just build
+      - name: Test
+        run: cd hardware && just test

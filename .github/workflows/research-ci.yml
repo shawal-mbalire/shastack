@@ -1,0 +1,16 @@
+name: Research CI
+on:
+  push:
+    paths: ['research/**']
+  pull_request:
+    paths: ['research/**']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@just
+      - name: Build
+        run: cd research && just build
+      - name: Test
+        run: cd research && just test

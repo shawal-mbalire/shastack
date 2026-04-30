@@ -1,0 +1,16 @@
+name: Audit CI
+on:
+  push:
+    paths: ['audit/**']
+  pull_request:
+    paths: ['audit/**']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@just
+      - name: Build
+        run: cd audit && just build
+      - name: Test
+        run: cd audit && just test

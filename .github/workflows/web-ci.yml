@@ -1,0 +1,16 @@
+name: Web CI
+on:
+  push:
+    paths: ['web/**']
+  pull_request:
+    paths: ['web/**']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@just
+      - name: Build
+        run: cd web && just build
+      - name: Test
+        run: cd web && just test

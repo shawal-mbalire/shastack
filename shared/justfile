@@ -1,0 +1,5 @@
+build:
+    @echo "Building shared module..."
+
+test:
+    @echo "Testing shared module..."
