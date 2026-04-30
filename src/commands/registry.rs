@@ -1,4 +1,5 @@
 use anyhow::Result;
+use colored::*;
 use crate::commands::RegistryAction;
 use crate::workspace;
 use std::fs;
@@ -30,19 +31,19 @@ pub fn exec(action: RegistryAction) -> Result<()> {
                 serde_json::to_string_pretty(&metadata)?,
             )?;
 
-            println!("Model {} pinned with hash {}.", model, git_hash);
+            println!("{}", format!("Model {} pinned with hash {}.", model, git_hash).green());
         }
         RegistryAction::List => {
             let registry_dir = root.join("ml/model_registry");
             if !registry_dir.exists() {
-                println!("Model registry empty.");
+                println!("{}", "Model registry empty.".yellow());
                 return Ok(());
             }
 
             for entry in fs::read_dir(registry_dir)? {
                 let entry = entry?;
                 if entry.path().is_dir() {
-                    println!("Model: {:?}", entry.file_name());
+                    println!("{}", format!("Model: {:?}", entry.file_name()).cyan());
                 }
             }
         }

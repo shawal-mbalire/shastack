@@ -1,4 +1,5 @@
 use anyhow::Result;
+use colored::*;
 use crate::workspace;
 
 pub fn exec(component: Option<String>) -> Result<()> {
@@ -22,9 +23,9 @@ pub fn exec(component: Option<String>) -> Result<()> {
             _ => return Err(anyhow::anyhow!("Invalid version component: {}", comp)),
         }
         workspace::set_version(&root, &version)?;
-        println!("Updated version to {}", version);
+        println!("{}", format!("Updated version to {}", version).green());
     } else {
-        println!("Current version: {}", version);
+        println!("{}", format!("Current version: {}", version).cyan());
     }
 
     Ok(())

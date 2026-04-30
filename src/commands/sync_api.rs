@@ -1,10 +1,11 @@
 use anyhow::Result;
+use colored::*;
 use crate::workspace;
 use std::process::Command;
 
 pub fn exec() -> Result<()> {
     let root = workspace::find_root()?;
-    println!("Syncing APIs in workspace: {:?}", root);
+    println!("{}", format!("Syncing APIs in workspace: {:?}", root).cyan());
 
     let mut generated = false;
 
@@ -16,7 +17,7 @@ pub fn exec() -> Result<()> {
 
     if let Ok(s) = status {
         if s.success() {
-            println!("Root API sync successful.");
+            println!("{}", "Root API sync successful.".green());
             generated = true;
         }
     }
@@ -24,7 +25,7 @@ pub fn exec() -> Result<()> {
     // Check for web/server (Pydantic)
     let server_dir = root.join("web/server");
     if server_dir.exists() {
-        println!("Checking for Pydantic definitions in web/server...");
+        println!("{}", "Checking for Pydantic definitions in web/server...".cyan());
         // Dummy placeholder for actual generation logic
         generated = true;
     }
@@ -32,14 +33,14 @@ pub fn exec() -> Result<()> {
     // Check for web/client (Zod)
     let client_dir = root.join("web/client");
     if client_dir.exists() {
-        println!("Checking for Zod definitions in web/client...");
+        println!("{}", "Checking for Zod definitions in web/client...".cyan());
         generated = true;
     }
 
     if generated {
-        println!("API synchronization complete.");
+        println!("{}", "API synchronization complete.".green());
     } else {
-        println!("No API definitions found or sync failed.");
+        println!("{}", "No API definitions found or sync failed.".yellow());
     }
 
     Ok(())
