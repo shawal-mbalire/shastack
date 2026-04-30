@@ -1,0 +1,5 @@
+build:
+    @echo "Building mobile module..."
+
+test:
+    @echo "Testing mobile module..."

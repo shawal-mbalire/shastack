@@ -1,0 +1,5 @@
+build:
+    @echo "Building hardware module..."
+
+test:
+    @echo "Testing hardware module..."

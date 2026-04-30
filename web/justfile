@@ -1,0 +1,5 @@
+build:
+    @echo "Building web module..."
+
+test:
+    @echo "Testing web module..."

@@ -1,5 +1,14 @@
 # shastack Development Workflow
 
+## The Rust Pivot
+The shastack core is now built with **Rust**. All TypeScript files have been removed to ensure a high-performance, type-safe, and cross-platform experience.
+
+## Installation (One-Liner)
+To install the latest version of the `sha` CLI:
+```bash
+curl -fsSL https://raw.githubusercontent.com/shawal-mbalire/shastack/main/install.sh | bash
+```
+
 ## Issue-Driven Development (IDD) with `gh`
 
 1.  **Create Issue:** Every task starts with a GitHub issue.

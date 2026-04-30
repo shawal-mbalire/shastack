@@ -1,10 +1,14 @@
 {
   "name": "shastack",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "modules": {
     "cli": {
       "enabled": true,
       "path": "cli"
+    },
+    "landing-page": {
+      "enabled": true,
+      "path": "landing-page"
     },
     "web": {
       "enabled": true,

@@ -1,0 +1,5 @@
+build:
+    @echo "Building bench module..."
+
+test:
+    @echo "Testing bench module..."

@@ -1,0 +1,5 @@
+build:
+    @echo "Building docs module..."
+
+test:
+    @echo "Testing docs module..."
