@@ -1,0 +1,8 @@
+node_modules/
+.env
+.env.sha
+.sha/config.json.bak
+dist/
+build/
+*.log
+.DS_Store

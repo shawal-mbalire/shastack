@@ -1,0 +1,30 @@
+{
+  "name": "shastack",
+  "version": "0.1.0",
+  "modules": {
+    "web": {
+      "enabled": true,
+      "path": "web"
+    },
+    "ml": {
+      "enabled": true,
+      "path": "ml"
+    },
+    "research": {
+      "enabled": true,
+      "path": "research"
+    },
+    "hardware": {
+      "enabled": true,
+      "path": "hardware"
+    },
+    "mobile": {
+      "enabled": true,
+      "path": "mobile"
+    },
+    "infra": {
+      "enabled": true,
+      "path": "infra"
+    }
+  }
+}

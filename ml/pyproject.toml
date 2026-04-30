@@ -1,0 +1,12 @@
+[project]
+name = "shastack-ml"
+version = "0.1.0"
+description = "Machine Learning module for shastack"
+dependencies = [
+    "torch",
+    "pandas",
+    "numpy",
+]
+
+[tool.uv]
+package = true
