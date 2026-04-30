@@ -45,6 +45,9 @@ fn main() -> Result<()> {
         Commands::Registry { action } => {
             commands::registry::exec(action)?;
         }
+        Commands::Docs { feature, std } => {
+            commands::docs::exec(feature, std)?;
+        }
     }
 
     Ok(())
