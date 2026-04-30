@@ -15,7 +15,7 @@
       "path": "research"
     },
     "hardware": {
-      "enabled": false,
+      "enabled": true,
       "path": "hardware"
     },
     "mobile": {
