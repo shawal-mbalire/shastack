@@ -16,7 +16,7 @@ fn main() -> Result<()> {
             commands::add::exec(feature)?;
         }
         Commands::Version { component } => {
-            println!("Updating version: {:?}", component);
+            commands::version::exec(component)?;
         }
         Commands::Env { action } => {
             commands::env::exec(action)?;
