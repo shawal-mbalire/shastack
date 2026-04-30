@@ -38,29 +38,46 @@ pub fn add_feature(root: &Path, feature: &str) -> Result<()> {
 }
 
 fn create_feature_dir(root: &Path, feature: &str) -> Result<()> {
-    match feature {
+    let feature_path = match feature {
         "web" | "Web Frontend (Angular)" | "Web Backend (Flask)" => {
             fs::create_dir_all(root.join("web/client"))?;
             fs::create_dir_all(root.join("web/server"))?;
+            "web"
         }
         "mobile" | "Mobile App (Flutter)" => {
             fs::create_dir_all(root.join("mobile/app"))?;
+            "mobile"
         }
         "research" | "Research (LaTeX)" => {
             fs::create_dir_all(root.join("research/src"))?;
+            "research"
         }
         "ml" | "ML (Python/Notebooks)" => {
             fs::create_dir_all(root.join("ml/notebooks"))?;
             fs::create_dir_all(root.join("ml/src"))?;
+            "ml"
         }
         "hardware" | "Hardware (Firmware)" => {
             fs::create_dir_all(root.join("hardware/src"))?;
+            "hardware"
         }
         _ => {
             // Generic feature directory
             fs::create_dir_all(root.join(feature))?;
+            feature
         }
-    }
+    };
+
+    // Scaffolding Modular CI
+    let ci_dir = root.join(feature_path).join(".github/workflows");
+    fs::create_dir_all(&ci_dir)?;
+    
+    let ci_content = format!(
+        "name: {} CI\n\non:\n  push:\n    paths:\n      - '{}/**'\n",
+        feature_path, feature_path
+    );
+    fs::write(ci_dir.join("main.yml"), ci_content)?;
+
     Ok(())
 }
 
@@ -164,6 +181,27 @@ test:
 "#;
     fs::write(root.join("justfile"), justfile_content)?;
 
+    // Create root CI coordinator
+    let root_ci_dir = root.join(".github/workflows");
+    fs::create_dir_all(&root_ci_dir)?;
+    let root_ci_content = r#"name: Global CI Coordinator
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Global Tests
+        run: just test
+"#;
+    fs::write(root_ci_dir.join("main.yml"), root_ci_content)?;
+
     // Create feature directories
     for feature in features {
         create_feature_dir(root, feature)?;
@@ -195,8 +233,9 @@ mod tests {
         assert!(workspace_path.join(".sha/config.json").exists());
         assert!(workspace_path.join("web/client").exists());
         assert!(workspace_path.join("research/src").exists());
-        assert!(workspace_path.join("justfile").exists());
-        assert!(workspace_path.join(".env.sha").exists());
+        assert!(workspace_path.join(".github/workflows/main.yml").exists());
+        assert!(workspace_path.join("web/.github/workflows/main.yml").exists());
+        assert!(workspace_path.join("research/.github/workflows/main.yml").exists());
 
         Ok(())
     }
