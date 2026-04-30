@@ -1,5 +1,12 @@
 build:
-    @echo "Building ml module..."
+    uv sync
 
 test:
-    @echo "Testing ml module..."
+    @echo "Running ML tests..."
+    # uv run pytest
+
+run:
+    uv run python src/model.py
+
+notebooks:
+    uv run jupyter lab

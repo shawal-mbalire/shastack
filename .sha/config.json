@@ -2,49 +2,53 @@
   "name": "shastack",
   "version": "1.0.0",
   "modules": {
-    "cli": {
+    "docs": {
       "enabled": true,
-      "path": "cli"
+      "path": "docs"
     },
-    "landing-page": {
+    "shared": {
       "enabled": true,
-      "path": "landing-page"
+      "path": "shared"
     },
     "web": {
       "enabled": true,
       "path": "web"
     },
+    "mobile": {
+      "enabled": true,
+      "path": "mobile"
+    },
     "ml": {
       "enabled": true,
       "path": "ml"
-    },
-    "research": {
-      "enabled": true,
-      "path": "research"
     },
     "hardware": {
       "enabled": true,
       "path": "hardware"
     },
-    "mobile": {
-      "enabled": true,
-      "path": "mobile"
-    },
     "infra": {
       "enabled": true,
       "path": "infra"
-    },
-    "bench": {
-      "enabled": true,
-      "path": "bench"
     },
     "audit": {
       "enabled": true,
       "path": "audit"
     },
-    "docs": {
+    "landing-page": {
       "enabled": true,
-      "path": "docs"
+      "path": "landing-page"
+    },
+    "bench": {
+      "enabled": true,
+      "path": "bench"
+    },
+    "cli": {
+      "enabled": true,
+      "path": "cli"
+    },
+    "research": {
+      "enabled": true,
+      "path": "research"
     }
   }
 }

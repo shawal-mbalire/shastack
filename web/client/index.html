@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shastack Client</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f0f2f5; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #status { font-weight: bold; }
+        .healthy { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Shastack Web Client</h1>
+        <p>Server Health: <span id="status">Checking...</span></p>
+    </div>
+
+    <script>
+        async function checkHealth() {
+            const statusEl = document.getElementById('status');
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                if (data.status === 'healthy') {
+                    statusEl.textContent = 'Healthy';
+                    statusEl.className = 'healthy';
+                } else {
+                    statusEl.textContent = 'Unknown';
+                    statusEl.className = 'error';
+                }
+            } catch (error) {
+                statusEl.textContent = 'Unreachable';
+                statusEl.className = 'error';
+                console.error('Error fetching health:', error);
+            }
+        }
+        checkHealth();
+    </script>
+</body>
+</html>
