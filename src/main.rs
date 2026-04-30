@@ -22,13 +22,13 @@ fn main() -> Result<()> {
             commands::env::exec(action)?;
         }
         Commands::Run { feature } => {
-            println!("Running feature: {}", feature);
+            commands::wrappers::run(feature)?;
         }
         Commands::Build { feature } => {
-            println!("Building feature: {}", feature);
+            commands::wrappers::build(feature)?;
         }
         Commands::Test { feature } => {
-            println!("Testing feature: {}", feature);
+            commands::wrappers::test(feature)?;
         }
         Commands::Flash => {
             println!("Flashing firmware...");
