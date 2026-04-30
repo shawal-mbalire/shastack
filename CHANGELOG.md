@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/shawal-mbalire/shastack/compare/v1.0.0...v1.1.0) (2026-04-30)
+
+
+### Features
+
+* **cli:** add global --dry-run option [#13](https://github.com/shawal-mbalire/shastack/issues/13) ([22af6e2](https://github.com/shawal-mbalire/shastack/commit/22af6e2e72a36fdd4781da2b9fa30c5256a061e1))
+
 # 1.0.0 (2026-04-30)
 
 
