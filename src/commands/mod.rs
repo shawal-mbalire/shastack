@@ -2,6 +2,7 @@ pub mod add;
 pub mod env;
 pub mod new;
 pub mod pulse;
+pub mod registry;
 pub mod sync_api;
 pub mod version;
 pub mod wrappers;
@@ -68,6 +69,19 @@ pub enum Commands {
     SyncApi,
     /// Checks health and heartbeats of the workspace modules
     Pulse,
+    /// Manages the ML model registry and research artifacts
+    Registry {
+        #[command(subcommand)]
+        action: RegistryAction,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum RegistryAction {
+    /// Pins a model weight with current git hash
+    Pin { model: String, weight_path: String },
+    /// Lists all registered models
+    List,
 }
 
 #[derive(Subcommand)]
