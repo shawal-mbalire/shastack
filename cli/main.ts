@@ -5,6 +5,10 @@ import { join } from "path";
 const program = new Command();
 const CONFIG_PATH = ".sha/config.json";
 
+function isDryRun() {
+  return program.opts().dryRun;
+}
+
 function loadConfig() {
   if (!existsSync(CONFIG_PATH)) {
     console.error("Error: .sha/config.json not found.");
@@ -14,13 +18,18 @@ function loadConfig() {
 }
 
 function saveConfig(config: any) {
+  if (isDryRun()) {
+    console.log(`[DRY-RUN] Would save config to ${CONFIG_PATH}`);
+    return;
+  }
   writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
 
 program
   .name("sha")
   .description("shastack CLI tool")
-  .version("0.1.0");
+  .version("0.1.0")
+  .option("--dry-run", "simulate execution without making changes");
 
 program
   .command("new <module>")
@@ -35,15 +44,19 @@ program
     if (config.modules[moduleName].enabled) {
       console.log(`Module '${moduleName}' is already enabled.`);
     } else {
+      console.log(`Enabling module: ${moduleName}`);
       config.modules[moduleName].enabled = true;
       saveConfig(config);
-      console.log(`Enabled module: ${moduleName}`);
     }
 
     const modulePath = config.modules[moduleName].path;
     if (!existsSync(modulePath)) {
-      mkdirSync(modulePath, { recursive: true });
-      console.log(`Created directory: ${modulePath}`);
+      if (isDryRun()) {
+        console.log(`[DRY-RUN] Would create directory: ${modulePath}`);
+      } else {
+        mkdirSync(modulePath, { recursive: true });
+        console.log(`Created directory: ${modulePath}`);
+      }
     }
   });
 
@@ -63,10 +76,14 @@ program
     }
 
     const modulePath = config.modules[moduleName].path;
-    console.log(`Running in ${moduleName} (${modulePath}): ${cmd.join(" ")}`);
+    const commandStr = cmd.join(" ");
     
-    // In a real implementation, we'd use Bun.spawn or similar.
-    // For now, let's just log the intent as this is a scaffold.
+    if (isDryRun()) {
+      console.log(`[DRY-RUN] Would run in ${moduleName} (${modulePath}): ${commandStr}`);
+    } else {
+      console.log(`Running in ${moduleName} (${modulePath}): ${commandStr}`);
+      // In a real implementation, we'd use Bun.spawn or similar.
+    }
   });
 
 const ENV_PATH = ".env.sha";
@@ -82,6 +99,10 @@ function loadEnv() {
 }
 
 function saveEnv(env: any) {
+  if (isDryRun()) {
+    console.log(`[DRY-RUN] Would save environment to ${ENV_PATH}`);
+    return;
+  }
   const content = Object.entries(env)
     .map(([key, value]) => `${key}=${value}`)
     .join("\n");
@@ -97,7 +118,9 @@ envCmd
     const env = loadEnv();
     env[key] = value;
     saveEnv(env);
-    console.log(`Set ${key}=${value} in ${ENV_PATH}`);
+    if (!isDryRun()) {
+      console.log(`Set ${key}=${value} in ${ENV_PATH}`);
+    }
   });
 
 envCmd
@@ -128,8 +151,12 @@ busCmd
   .command("emit <event> [payload]")
   .description("Emit an event to the bus")
   .action((event, payload) => {
-    console.log(`[BUS] Emitting event: ${event} with payload: ${payload || "{}"}`);
-    // In a real implementation, this could write to a socket or message queue
+    const msg = `[BUS] Emitting event: ${event} with payload: ${payload || "{}"}`;
+    if (isDryRun()) {
+      console.log(`[DRY-RUN] Would emit: ${msg}`);
+    } else {
+      console.log(msg);
+    }
   });
 
 busCmd
@@ -137,7 +164,6 @@ busCmd
   .description("Listen for an event on the bus")
   .action((event) => {
     console.log(`[BUS] Listening for event: ${event}...`);
-    // Persistent listener logic
   });
 
 const benchCmd = program.command("bench").description("Performance benchmarking");
@@ -148,7 +174,6 @@ benchCmd
   .action((moduleName) => {
     console.log(`[BENCH] Running benchmarks for ${moduleName}...`);
     const start = performance.now();
-    // Simulate benchmark
     setTimeout(() => {
       const end = performance.now();
       console.log(`[BENCH] Completed in ${(end - start).toFixed(2)}ms`);
@@ -172,7 +197,6 @@ docsCmd
   .description("Serve the documentation locally")
   .action(() => {
     console.log("[DOCS] Serving documentation at http://localhost:3000...");
-    // Simulate server
   });
 
 const releaseCmd = program.command("release").description("Release management");
