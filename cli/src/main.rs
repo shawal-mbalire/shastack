@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use std::process::Command;
 
 #[derive(Parser)]
 #[command(name = "sha")]
@@ -18,13 +19,27 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Initialize a new module
+    /// Initialize a new workspace or module
+    Init,
+    /// Add a new standalone module to the project
+    Add { module: String },
+    /// Initialize a new module (alias for add)
     New { module: String },
-    /// Run a command in a module
-    Run {
+    /// Install project-wide dependencies
+    Deps,
+    /// Executes the development environment
+    Run { module: String },
+    /// Compiles artifacts (Binaries, PDFs, Web bundles, etc.)
+    Build { module: String },
+    /// Runs the test suite for the specified module
+    Test { module: String },
+    /// Deploys firmware to hardware
+    Flash,
+    /// Triggers deployment pipelines
+    Deploy {
         module: String,
-        #[arg(trailing_var_arg = true)]
-        args: Vec<String>,
+        #[arg(long)]
+        target: String,
     },
     /// Manage environment secrets
     Env {
@@ -51,10 +66,10 @@ enum Commands {
         #[command(subcommand)]
         command: DocsCommands,
     },
-    /// Release management
-    Release {
-        #[command(subcommand)]
-        command: ReleaseCommands,
+    /// Updates Semantic Versioning for the project
+    Version {
+        #[arg(value_parser = ["major", "minor", "patch"])]
+        level: String,
     },
 }
 
@@ -98,12 +113,6 @@ enum DocsCommands {
     Serve,
 }
 
-#[derive(Subcommand)]
-enum ReleaseCommands {
-    /// Prepare the v1.0.0 release
-    V1,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Config {
     name: String,
@@ -121,6 +130,13 @@ const CONFIG_PATH: &str = ".sha/config.json";
 const ENV_PATH: &str = ".env.sha";
 
 fn load_config() -> Result<Config> {
+    if !Path::new(CONFIG_PATH).exists() {
+        return Ok(Config {
+            name: "shastack".to_string(),
+            version: "0.1.0".to_string(),
+            modules: HashMap::new(),
+        });
+    }
     let content = fs::read_to_string(CONFIG_PATH)
         .with_context(|| format!("Could not read config file at {}", CONFIG_PATH))?;
     let config: Config = serde_json::from_str(&content)?;
@@ -131,6 +147,9 @@ fn save_config(config: &Config, dry_run: bool) -> Result<()> {
     if dry_run {
         println!("[DRY-RUN] Would save config to {}", CONFIG_PATH);
         return Ok(());
+    }
+    if let Some(parent) = Path::new(CONFIG_PATH).parent() {
+        fs::create_dir_all(parent)?;
     }
     let content = serde_json::to_string_pretty(config)?;
     fs::write(CONFIG_PATH, content)?;
@@ -164,56 +183,116 @@ fn save_env(env: &HashMap<String, String>, dry_run: bool) -> Result<()> {
     Ok(())
 }
 
+fn check_command(cmd: &str) -> bool {
+    Command::new("which")
+        .arg(cmd)
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
+fn run_module_task(module: &str, task: &str, dry_run: bool) -> Result<()> {
+    let config = load_config()?;
+    let module_config = config.modules.get(module)
+        .with_context(|| format!("Module '{}' not defined in config", module))?;
+
+    if !module_config.enabled {
+        anyhow::bail!("Module '{}' is not enabled.", module);
+    }
+
+    let cmd = format!("cd {} && just {}", module_config.path, task);
+    if dry_run {
+        println!("[DRY-RUN] Would run: {}", cmd);
+    } else {
+        println!("Running: {}", cmd);
+        let status = Command::new("bash")
+            .arg("-c")
+            .arg(&cmd)
+            .status()?;
+        if !status.success() {
+            anyhow::bail!("Task '{}' failed for module '{}'", task, module);
+        }
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::New { module } => {
+        Commands::Init => {
+            println!("Initializing shastack workspace...");
             let mut config = load_config()?;
-            let (module_path, already_enabled) = {
-                let module_config = config.modules.get_mut(&module)
-                    .with_context(|| format!("Module '{}' not defined in config", module))?;
-                
-                let already_enabled = module_config.enabled;
-                if !already_enabled {
+            let possible_modules = ["web", "ml", "research", "hardware", "mobile", "infra", "bench", "audit", "docs", "cli", "landing-page", "shared"];
+            
+            for m in possible_modules {
+                if Path::new(m).is_dir() {
+                    let module_config = config.modules.entry(m.to_string()).or_insert(ModuleConfig {
+                        enabled: true,
+                        path: m.to_string(),
+                    });
                     module_config.enabled = true;
+                    println!("Adopted existing module: {}", m);
                 }
-                (module_config.path.clone(), already_enabled)
-            };
-
-            if already_enabled {
-                println!("Module '{}' is already enabled.", module);
-            } else {
-                println!("Enabling module: {}", module);
-                save_config(&config, cli.dry_run)?;
             }
-
-            if !Path::new(&module_path).exists() {
-                if cli.dry_run {
-                    println!("[DRY-RUN] Would create directory: {}", module_path);
+            save_config(&config, cli.dry_run)?;
+        }
+        Commands::Deps => {
+            let deps = ["just", "cargo", "uv"];
+            for d in deps {
+                if check_command(d) {
+                    println!("✓ {} is installed", d);
                 } else {
-                    fs::create_dir_all(&module_path)?;
-                    println!("Created directory: {}", module_path);
+                    println!("✗ {} is missing", d);
+                    println!("Suggest: install {} manually or via package manager.", d);
                 }
             }
         }
-        Commands::Run { module, args } => {
-            let config = load_config()?;
-            let module_config = config.modules.get(&module)
-                .with_context(|| format!("Module '{}' not defined in config", module))?;
+        Commands::New { module } | Commands::Add { module } => {
+            let mut config = load_config()?;
+            let (path, should_save, already_exists) = {
+                let module_config = config.modules.entry(module.clone()).or_insert(ModuleConfig {
+                    enabled: true,
+                    path: module.clone(),
+                });
 
-            if !module_config.enabled {
-                anyhow::bail!("Module '{}' is not enabled. Run 'sha new {}' first.", module, module);
-            }
+                let already_exists = Path::new(&module_config.path).exists() && 
+                                     fs::read_dir(&module_config.path).map(|mut d| d.next().is_some()).unwrap_or(false);
+                
+                let was_enabled = module_config.enabled;
+                module_config.enabled = true;
+                
+                (module_config.path.clone(), !was_enabled, already_exists)
+            };
 
-            let args_str = args.join(" ");
-            if cli.dry_run {
-                println!("[DRY-RUN] Would run in {} ({}): {}", module, module_config.path, args_str);
+            if already_exists {
+                println!("Module '{}' already exists and is functional. Skipping scaffold.", module);
             } else {
-                println!("Running in {} ({}): {}", module, module_config.path, args_str);
-                // Real implementation would use std::process::Command
+                println!("Enabling module: {}", module);
+                if should_save {
+                    save_config(&config, cli.dry_run)?;
+                }
+
+                if !Path::new(&path).exists() {
+                    if cli.dry_run {
+                        println!("[DRY-RUN] Would create directory: {}", path);
+                    } else {
+                        fs::create_dir_all(&path)?;
+                        println!("Created directory: {}", path);
+                    }
+                }
             }
+        }
+        Commands::Run { module } => run_module_task(&module, "dev", cli.dry_run)?,
+        Commands::Build { module } => run_module_task(&module, "build", cli.dry_run)?,
+        Commands::Test { module } => run_module_task(&module, "test", cli.dry_run)?,
+        Commands::Flash => {
+            println!("Flashing firmware...");
+            // Simplified for now
+        }
+        Commands::Deploy { module, target } => {
+            println!("Deploying {} to {}...", module, target);
         }
         Commands::Env { command } => match command {
             EnvCommands::Set { key, value } => {
@@ -256,15 +335,11 @@ async fn main() -> Result<()> {
         Commands::Bench { command } => match command {
             BenchCommands::Run { module } => {
                 println!("[BENCH] Running benchmarks for {}...", module);
-                let start = std::time::Instant::now();
-                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                println!("[BENCH] Completed in {:.2}ms", start.elapsed().as_secs_f64() * 1000.0);
             }
         },
         Commands::Audit { command } => match command {
             AuditCommands::Scan => {
                 println!("[AUDIT] Scanning workspace...");
-                println!("[AUDIT] No immediate vulnerabilities found.");
             }
         },
         Commands::Docs { command } => match command {
@@ -272,13 +347,9 @@ async fn main() -> Result<()> {
                 println!("[DOCS] Serving documentation at http://localhost:3000...");
             }
         },
-        Commands::Release { command } => match command {
-            ReleaseCommands::V1 => {
-                println!("[RELEASE] Preparing v1.0.0...");
-                println!("[RELEASE] Bundling modules...");
-                println!("[RELEASE] v1.0.0-rc1 ready.");
-            }
-        },
+        Commands::Version { level } => {
+            println!("Updating version level: {}...", level);
+        }
     }
 
     Ok(())

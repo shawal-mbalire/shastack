@@ -5,20 +5,19 @@ set shell := ["bash", "-uc"]
 # Install dependencies based on .sha/config.json
 deps:
     @echo "Installing project-wide dependencies..."
-    @cargo build --manifest-path cli/Cargo.toml
-    @cargo build --manifest-path landing-page/Cargo.toml
+    @cargo build --workspace
 
 # Run the sha CLI (requires Rust)
 sha *args:
-    @cargo run --manifest-path cli/Cargo.toml -- {{args}}
+    @cargo run -p sha -- {{args}}
 
 # Run the sha CLI in dry-run mode
 sha-dry *args:
-    @cargo run --manifest-path cli/Cargo.toml -- --dry-run {{args}}
+    @cargo run -p sha -- --dry-run {{args}}
 
 # Run tests per module
 test module="all":
-    {{ if module == "all" || module == "cli" }} cd cli && cargo test {{ endif }}
+    {{ if module == "all" || module == "cli" }} cargo test -p sha {{ endif }}
     {{ if module == "all" || module == "web" }} cd web && just test {{ endif }}
     {{ if module == "all" || module == "ml" }} cd ml && just test {{ endif }}
 

@@ -1,5 +1,13 @@
 build:
-    @echo "Building web module..."
+    cd server && just build
+    cd client && just build
 
 test:
-    @echo "Testing web module..."
+    cd server && just test
+    cd client && just test
+
+client:
+    cd client && just serve
+
+server:
+    cd server && just run

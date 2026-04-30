@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "cli",
+    "landing-page",
+]
+
+resolver = "2"
