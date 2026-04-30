@@ -175,4 +175,15 @@ docsCmd
     // Simulate server
   });
 
+const releaseCmd = program.command("release").description("Release management");
+
+releaseCmd
+  .command("v1")
+  .description("Prepare the v1.0.0 release")
+  .action(() => {
+    console.log("[RELEASE] Preparing v1.0.0...");
+    console.log("[RELEASE] Bundling modules...");
+    console.log("[RELEASE] v1.0.0-rc1 ready.");
+  });
+
 program.parse();
