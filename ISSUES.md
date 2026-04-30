@@ -12,5 +12,9 @@
 - [x] #36: Implement Observability & Logging (The Pulse)
 - [x] #37: Implement ML & Research Rigor Features
 - [x] #38: Optimize for rustup docs
-- [ ] #44: Cross-platform one-liner install script
-- [ ] #45: Auto-installation of workspace dependencies
+- [x] #44: Cross-platform one-liner install script
+- [x] #45: Auto-installation of workspace dependencies
+- [ ] #48: Add UI & Table dependencies
+- [ ] #49: Visual Overhaul: No Emojis & Color-coding
+- [ ] #50: Grid Layout Integration
+- [ ] #51: Implement `sha issue` subcommand
