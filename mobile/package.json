@@ -1,9 +1,0 @@
-{
-  "name": "shastack-mobile",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "build": "echo 'Building mobile...'",
-    "test": "echo 'Testing mobile...'"
-  }
-}

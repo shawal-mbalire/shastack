@@ -1,8 +1,0 @@
-build:
-    @echo "Building client..."
-
-test:
-    @echo "Testing client..."
-
-serve:
-    python3 -m http.server 3000

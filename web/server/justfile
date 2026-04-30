@@ -1,9 +1,0 @@
-build:
-    uv sync
-
-test:
-    @echo "Running server tests..."
-    # Add actual test commands here, e.g., pytest
-
-run:
-    uv run python main.py
