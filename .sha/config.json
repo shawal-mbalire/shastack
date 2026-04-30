@@ -21,6 +21,10 @@
     "mobile": {
       "enabled": true,
       "path": "mobile"
+    },
+    "infra": {
+      "enabled": true,
+      "path": "infra"
     }
   }
 }
