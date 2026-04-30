@@ -1,6 +1,7 @@
 pub mod add;
 pub mod env;
 pub mod new;
+pub mod version;
 
 use clap::{Parser, Subcommand};
 
