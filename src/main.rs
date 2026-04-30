@@ -31,10 +31,10 @@ fn main() -> Result<()> {
             commands::wrappers::test(feature)?;
         }
         Commands::Flash => {
-            println!("Flashing firmware...");
+            commands::wrappers::flash()?;
         }
         Commands::Deploy { feature, target } => {
-            println!("Deploying feature {} to target {}", feature, target);
+            commands::wrappers::deploy(feature, target)?;
         }
     }
 

@@ -5,5 +5,5 @@
 - [x] #24: Implement `sha add` command
 - [x] #26: Implement `sha version` command
 - [x] #28: Implement `sha env` command
-- [ ] #30: Implement `sha run`, `sha build`, `sha test` wrappers
-- [ ] #7: Implement `sha flash` and `sha deploy`
+- [x] #30: Implement `sha run`, `sha build`, `sha test` wrappers
+- [ ] #32: Implement `sha flash` and `sha deploy`
