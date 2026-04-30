@@ -1,5 +1,0 @@
-build:
-    @echo "Building audit module..."
-
-test:
-    @echo "Testing audit module..."

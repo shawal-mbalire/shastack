@@ -1,5 +1,0 @@
-build:
-    @echo "Building infra module..."
-
-test:
-    @echo "Testing infra module..."
