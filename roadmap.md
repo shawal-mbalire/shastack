@@ -23,3 +23,4 @@
 - [x] #4: Documentation & Developer Experience
 - [x] #5: Final Release (v1.0.0)
 - [x] #11: SemVer CI with Conventional Commits
+- [x] #15: CLI Module Registration
