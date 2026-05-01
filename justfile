@@ -4,19 +4,19 @@ set shell := ["bash", "-uc"]
 
 # Build the sha CLI
 build:
-    cargo build
+    cargo build -p sha
 
 # Run unit tests
 test:
-    cargo test
+    cargo test -p sha
 
 # Install the sha CLI locally
 install:
-    cargo install --path .
+    cargo install --path cli
 
 # Run the CLI with arguments (e.g., just run -- help)
 run *args:
-    cargo run -- {{args}}
+    cargo run -p sha -- {{args}}
 
 # --- Linting & Formatting ---
 
