@@ -1,6 +1,6 @@
+use crate::workspace;
 use anyhow::Result;
 use colored::*;
-use crate::workspace;
 
 pub fn exec(component: Option<String>) -> Result<()> {
     let root = workspace::find_root()?;

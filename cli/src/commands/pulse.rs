@@ -1,7 +1,7 @@
+use crate::workspace;
 use anyhow::Result;
 use colored::*;
 use comfy_table::Table;
-use crate::workspace;
 use std::fs;
 
 pub fn exec() -> Result<()> {
@@ -24,7 +24,9 @@ pub fn exec() -> Result<()> {
     // Check Web health
     table.add_row(vec![
         "Web".cyan().to_string(),
-        "Use 'sha run web' for health endpoints.".white().to_string(),
+        "Use 'sha run web' for health endpoints."
+            .white()
+            .to_string(),
     ]);
 
     println!("{table}");

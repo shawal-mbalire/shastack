@@ -3,7 +3,10 @@ use colored::*;
 use std::process::Command;
 
 pub fn exec() -> Result<()> {
-    println!("{}", "Checking and installing system-wide dependencies...".cyan());
+    println!(
+        "{}",
+        "Checking and installing system-wide dependencies...".cyan()
+    );
 
     install_bun_if_missing()?;
     install_uv_if_missing()?;
@@ -77,7 +80,10 @@ fn install_angular_cli_if_missing() -> Result<()> {
 fn command_exists(cmd: &str) -> bool {
     if cfg!(windows) {
         Command::new("powershell")
-            .args(["-c", &format!("Get-Command {} -ErrorAction SilentlyContinue", cmd)])
+            .args([
+                "-c",
+                &format!("Get-Command {} -ErrorAction SilentlyContinue", cmd),
+            ])
             .output()
             .map(|output| output.status.success())
             .unwrap_or(false)

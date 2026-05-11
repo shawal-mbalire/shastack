@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.artifact }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            artifact: sha-linux-x86_64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: sha-macos-x86_64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: sha-macos-aarch64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: sha-windows-x86_64.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install musl tools (Linux)
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get install -y musl-tools
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }} -p sha
+
+      - name: Rename binary (Unix)
+        if: matrix.os != 'windows-latest'
+        run: cp target/${{ matrix.target }}/release/sha ${{ matrix.artifact }}
+
+      - name: Rename binary (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: Copy-Item "target/${{ matrix.target }}/release/sha.exe" "${{ matrix.artifact }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true

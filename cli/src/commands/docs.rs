@@ -1,14 +1,15 @@
+use crate::workspace;
 use anyhow::Result;
 use colored::*;
 use std::process::Command;
-use crate::workspace;
 
 pub fn exec(feature: Option<String>, std: bool) -> Result<()> {
     if std {
-        println!("{}", "Opening rustup standard library documentation...".cyan());
-        Command::new("rustup")
-            .args(["doc", "--std"])
-            .status()?;
+        println!(
+            "{}",
+            "Opening rustup standard library documentation...".cyan()
+        );
+        Command::new("rustup").args(["doc", "--std"]).status()?;
         return Ok(());
     }
 
@@ -16,7 +17,10 @@ pub fn exec(feature: Option<String>, std: bool) -> Result<()> {
         let root = workspace::find_root()?;
         let feature_dir = root.join(&f);
         if feature_dir.exists() {
-            println!("{}", format!("Opening documentation for feature: {}", f).cyan());
+            println!(
+                "{}",
+                format!("Opening documentation for feature: {}", f).cyan()
+            );
             // This assumes 'cargo doc' has been run or we use 'just doc'
             Command::new("just")
                 .arg("doc")
@@ -27,9 +31,7 @@ pub fn exec(feature: Option<String>, std: bool) -> Result<()> {
         }
     } else {
         println!("{}", "Opening rustup documentation...".cyan());
-        Command::new("rustup")
-            .arg("doc")
-            .status()?;
+        Command::new("rustup").arg("doc").status()?;
     }
 
     Ok(())

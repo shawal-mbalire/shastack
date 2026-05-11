@@ -1,7 +1,7 @@
+use crate::workspace;
 use anyhow::Result;
 use colored::*;
 use std::process::Command;
-use crate::workspace;
 
 pub fn run(feature: String) -> Result<()> {
     exec_just(&feature, "run")
@@ -27,7 +27,10 @@ pub fn deploy(feature: String, target: String) -> Result<()> {
         return Err(anyhow::anyhow!("Feature directory {} not found", feature));
     }
 
-    println!("{}", format!("Deploying {} to {}...", feature, target).cyan());
+    println!(
+        "{}",
+        format!("Deploying {} to {}...", feature, target).cyan()
+    );
 
     let status = Command::new("just")
         .arg("deploy")
@@ -58,7 +61,11 @@ fn exec_just(feature: &str, action: &str) -> Result<()> {
         .status()?;
 
     if !status.success() {
-        return Err(anyhow::anyhow!("just {} failed with status {}", action, status));
+        return Err(anyhow::anyhow!(
+            "just {} failed with status {}",
+            action,
+            status
+        ));
     }
 
     Ok(())

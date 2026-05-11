@@ -1,6 +1,148 @@
+pub mod scaffold;
+
 use anyhow::Result;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+const WEB_CI_TEMPLATE: &str = r#"name: Web CI
+
+on:
+  push:
+    paths:
+      - 'web/**'
+  pull_request:
+    paths:
+      - 'web/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies and run tests
+        run: |
+          just deps
+          just test
+"#;
+
+const MOBILE_CI_TEMPLATE: &str = r#"name: Mobile CI
+
+on:
+  push:
+    paths:
+      - 'mobile/**'
+  pull_request:
+    paths:
+      - 'mobile/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Install dependencies and run tests
+        run: |
+          just deps
+          just test
+"#;
+
+const RESEARCH_CI_TEMPLATE: &str = r#"name: Research CI
+
+on:
+  push:
+    paths:
+      - 'research/**'
+  pull_request:
+    paths:
+      - 'research/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: research
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - name: Install LaTeX toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-latex-extra biber
+      - name: Build paper
+        run: just build
+"#;
+
+const ML_CI_TEMPLATE: &str = r#"name: ML CI
+
+on:
+  push:
+    paths:
+      - 'ml/**'
+  pull_request:
+    paths:
+      - 'ml/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v5
+      - name: Install dependencies and run tests
+        run: |
+          just deps
+          just test
+"#;
+
+const HARDWARE_CI_TEMPLATE: &str = r#"name: Hardware CI
+
+on:
+  push:
+    paths:
+      - 'hardware/**'
+  pull_request:
+    paths:
+      - 'hardware/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hardware
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install PlatformIO
+        run: pip install platformio
+      - name: Compile firmware
+        run: pio run
+"#;
 
 pub fn find_root() -> Result<PathBuf> {
     let mut current = std::env::current_dir()?;
@@ -12,7 +154,9 @@ pub fn find_root() -> Result<PathBuf> {
             break;
         }
     }
-    Err(anyhow::anyhow!("Not a shastack workspace (no .sha/config.json found)"))
+    Err(anyhow::anyhow!(
+        "Not a shastack workspace (no .sha/config.json found)"
+    ))
 }
 
 pub fn add_feature(root: &Path, feature: &str) -> Result<()> {
@@ -42,43 +186,52 @@ fn create_feature_dir(root: &Path, feature: &str) -> Result<()> {
         "web" | "Web Frontend (Angular)" | "Web Backend (Flask)" => {
             fs::create_dir_all(root.join("web/client"))?;
             fs::create_dir_all(root.join("web/server"))?;
+            scaffold::scaffold_web(root)?;
             "web"
         }
         "mobile" | "Mobile App (Flutter)" => {
             fs::create_dir_all(root.join("mobile/app"))?;
+            scaffold::scaffold_mobile(root)?;
             "mobile"
         }
         "research" | "Research (LaTeX)" => {
             fs::create_dir_all(root.join("research/src"))?;
             fs::create_dir_all(root.join("research/artifacts"))?;
+            scaffold::scaffold_research(root)?;
             "research"
         }
         "ml" | "ML (Python/Notebooks)" => {
             fs::create_dir_all(root.join("ml/notebooks"))?;
             fs::create_dir_all(root.join("ml/src"))?;
             fs::create_dir_all(root.join("ml/model_registry"))?;
-            fs::write(root.join("ml/heartbeat.json"), "{\"status\": \"initialized\"}")?;
+            scaffold::scaffold_ml(root)?;
             "ml"
         }
         "hardware" | "Hardware (Firmware)" => {
             fs::create_dir_all(root.join("hardware/src"))?;
+            scaffold::scaffold_hardware(root)?;
             "hardware"
         }
         _ => {
-            // Generic feature directory
             fs::create_dir_all(root.join(feature))?;
             feature
         }
     };
 
-    // Scaffolding Modular CI
     let ci_dir = root.join(feature_path).join(".github/workflows");
     fs::create_dir_all(&ci_dir)?;
-    
-    let ci_content = format!(
-        "name: {} CI\n\non:\n  push:\n    paths:\n      - '{}/**'\n",
-        feature_path, feature_path
-    );
+
+    let ci_content = match feature_path {
+        "web" => WEB_CI_TEMPLATE.to_string(),
+        "mobile" => MOBILE_CI_TEMPLATE.to_string(),
+        "research" => RESEARCH_CI_TEMPLATE.to_string(),
+        "ml" => ML_CI_TEMPLATE.to_string(),
+        "hardware" => HARDWARE_CI_TEMPLATE.to_string(),
+        _ => format!(
+            "name: {} CI\n\non:\n  push:\n    paths:\n      - '{}/**'\n  pull_request:\n    paths:\n      - '{}/**'\n\njobs:\n  validate:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - name: No module checks configured\n        run: echo 'No CI template configured for {}'\n",
+            feature_path, feature_path, feature_path, feature_path
+        ),
+    };
     fs::write(ci_dir.join("main.yml"), ci_content)?;
 
     Ok(())
@@ -247,15 +400,37 @@ mod tests {
         let workspace_path = dir.path().join("test_ws");
         let workspace_name = workspace_path.to_str().unwrap();
 
-        init(workspace_name, vec!["Web Frontend (Angular)", "Research (LaTeX)"])?;
+        init(
+            workspace_name,
+            vec!["Web Frontend (Angular)", "Research (LaTeX)"],
+        )?;
 
         assert!(workspace_path.exists());
         assert!(workspace_path.join(".sha/config.json").exists());
         assert!(workspace_path.join("web/client").exists());
+        assert!(workspace_path.join("web/client/package.json").exists());
+        assert!(workspace_path.join("web/server/src/index.ts").exists());
         assert!(workspace_path.join("research/src").exists());
+        assert!(workspace_path.join("research/main.tex").exists());
         assert!(workspace_path.join(".github/workflows/main.yml").exists());
-        assert!(workspace_path.join("web/.github/workflows/main.yml").exists());
-        assert!(workspace_path.join("research/.github/workflows/main.yml").exists());
+        assert!(
+            workspace_path
+                .join("web/.github/workflows/main.yml")
+                .exists()
+        );
+        assert!(
+            workspace_path
+                .join("research/.github/workflows/main.yml")
+                .exists()
+        );
+
+        let web_ci = fs::read_to_string(workspace_path.join("web/.github/workflows/main.yml"))?;
+        let research_ci =
+            fs::read_to_string(workspace_path.join("research/.github/workflows/main.yml"))?;
+        assert!(web_ci.contains("web/**"));
+        assert!(web_ci.contains("just deps"));
+        assert!(research_ci.contains("research/**"));
+        assert!(research_ci.contains("just build"));
 
         Ok(())
     }
@@ -276,6 +451,45 @@ mod tests {
         assert!(features.contains(&serde_json::json!("Web Frontend (Angular)")));
         assert!(features.contains(&serde_json::json!("Research (LaTeX)")));
         assert!(workspace_path.join("research/src").exists());
+        assert!(workspace_path.join("research/main.tex").exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_feature_specific_scaffolds() -> Result<()> {
+        let dir = tempdir()?;
+        let workspace_path = dir.path().join("test_feature_scaffolds");
+        let workspace_name = workspace_path.to_str().unwrap();
+
+        init(
+            workspace_name,
+            vec![
+                "Mobile App (Flutter)",
+                "ML (Python/Notebooks)",
+                "Hardware (Firmware)",
+            ],
+        )?;
+
+        assert!(workspace_path.join("mobile/app/pubspec.yaml").exists());
+        assert!(
+            workspace_path
+                .join("mobile/app/test/widget_test.dart")
+                .exists()
+        );
+        assert!(workspace_path.join("ml/pyproject.toml").exists());
+        assert!(workspace_path.join("ml/notebooks/01_eda.ipynb").exists());
+        assert!(workspace_path.join("ml/tests/test_smoke.py").exists());
+        assert!(workspace_path.join("hardware/platformio.ini").exists());
+        assert!(workspace_path.join("hardware/src/main.cpp").exists());
+
+        let ml_ci = fs::read_to_string(workspace_path.join("ml/.github/workflows/main.yml"))?;
+        let hardware_ci =
+            fs::read_to_string(workspace_path.join("hardware/.github/workflows/main.yml"))?;
+        assert!(ml_ci.contains("ml/**"));
+        assert!(ml_ci.contains("just test"));
+        assert!(hardware_ci.contains("hardware/**"));
+        assert!(hardware_ci.contains("pio run"));
 
         Ok(())
     }

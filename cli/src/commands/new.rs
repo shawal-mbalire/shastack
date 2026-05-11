@@ -1,10 +1,13 @@
+use crate::workspace;
 use anyhow::Result;
 use colored::*;
 use inquire::MultiSelect;
-use crate::workspace;
 
 pub fn exec(name: String) -> Result<()> {
-    println!("{}", format!("Initializing shastack workspace: {}", name).cyan());
+    println!(
+        "{}",
+        format!("Initializing shastack workspace: {}", name).cyan()
+    );
 
     let options = vec![
         "Web Frontend (Angular)",
@@ -19,6 +22,9 @@ pub fn exec(name: String) -> Result<()> {
 
     workspace::init(&name, selected_features)?;
 
-    println!("{}", format!("Workspace {} initialized successfully!", name).green());
+    println!(
+        "{}",
+        format!("Workspace {} initialized successfully!", name).green()
+    );
     Ok(())
 }

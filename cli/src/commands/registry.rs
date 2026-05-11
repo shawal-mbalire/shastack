@@ -1,8 +1,8 @@
+use crate::commands::RegistryAction;
+use crate::workspace;
 use anyhow::Result;
 use colored::*;
 use comfy_table::Table;
-use crate::commands::RegistryAction;
-use crate::workspace;
 use std::fs;
 use std::process::Command;
 
@@ -32,7 +32,10 @@ pub fn exec(action: RegistryAction) -> Result<()> {
                 serde_json::to_string_pretty(&metadata)?,
             )?;
 
-            println!("{}", format!("Model {} pinned with hash {}.", model, git_hash).green());
+            println!(
+                "{}",
+                format!("Model {} pinned with hash {}.", model, git_hash).green()
+            );
         }
         RegistryAction::List => {
             let registry_dir = root.join("ml/model_registry");
@@ -49,12 +52,25 @@ pub fn exec(action: RegistryAction) -> Result<()> {
                 if entry.path().is_dir() {
                     let metadata_path = entry.path().join("metadata.json");
                     if metadata_path.exists() {
-                        let metadata: serde_json::Value = serde_json::from_str(&fs::read_to_string(metadata_path)?)?;
+                        let metadata: serde_json::Value =
+                            serde_json::from_str(&fs::read_to_string(metadata_path)?)?;
                         table.add_row(vec![
                             metadata["model"].as_str().unwrap_or("").cyan().to_string(),
-                            metadata["weight_path"].as_str().unwrap_or("").yellow().to_string(),
-                            metadata["git_hash"].as_str().unwrap_or("").magenta().to_string(),
-                            metadata["timestamp"].as_str().unwrap_or("").white().to_string(),
+                            metadata["weight_path"]
+                                .as_str()
+                                .unwrap_or("")
+                                .yellow()
+                                .to_string(),
+                            metadata["git_hash"]
+                                .as_str()
+                                .unwrap_or("")
+                                .magenta()
+                                .to_string(),
+                            metadata["timestamp"]
+                                .as_str()
+                                .unwrap_or("")
+                                .white()
+                                .to_string(),
                         ]);
                     }
                 }

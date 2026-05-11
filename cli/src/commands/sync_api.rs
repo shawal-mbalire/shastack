@@ -1,11 +1,14 @@
+use crate::workspace;
 use anyhow::Result;
 use colored::*;
-use crate::workspace;
 use std::process::Command;
 
 pub fn exec() -> Result<()> {
     let root = workspace::find_root()?;
-    println!("{}", format!("Syncing APIs in workspace: {:?}", root).cyan());
+    println!(
+        "{}",
+        format!("Syncing APIs in workspace: {:?}", root).cyan()
+    );
 
     let mut generated = false;
 
@@ -25,7 +28,10 @@ pub fn exec() -> Result<()> {
     // Check for web/server (Pydantic)
     let server_dir = root.join("web/server");
     if server_dir.exists() {
-        println!("{}", "Checking for Pydantic definitions in web/server...".cyan());
+        println!(
+            "{}",
+            "Checking for Pydantic definitions in web/server...".cyan()
+        );
         // Dummy placeholder for actual generation logic
         generated = true;
     }

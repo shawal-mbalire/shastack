@@ -1,8 +1,8 @@
+use crate::commands::EnvAction;
+use crate::workspace;
 use anyhow::Result;
 use colored::*;
 use comfy_table::Table;
-use crate::commands::EnvAction;
-use crate::workspace;
 
 pub fn exec(action: EnvAction) -> Result<()> {
     let root = workspace::find_root()?;

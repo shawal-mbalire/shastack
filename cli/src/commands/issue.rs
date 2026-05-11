@@ -1,21 +1,31 @@
+use crate::commands::IssueAction;
 use anyhow::Result;
 use colored::*;
 use comfy_table::Table;
-use crate::commands::IssueAction;
 use std::process::Command;
 
 pub fn exec(action: IssueAction) -> Result<()> {
     match action {
         IssueAction::Start { id, description } => {
-            let branch_name = format!("issue-{}-{}", id, description.replace(' ', "-").to_lowercase());
-            println!("{}", format!("Starting issue {} on branch {}...", id, branch_name).cyan());
+            let branch_name = format!(
+                "issue-{}-{}",
+                id,
+                description.replace(' ', "-").to_lowercase()
+            );
+            println!(
+                "{}",
+                format!("Starting issue {} on branch {}...", id, branch_name).cyan()
+            );
 
             let status = Command::new("git")
                 .args(["checkout", "-b", &branch_name])
                 .status()?;
 
             if status.success() {
-                println!("{}", format!("Successfully switched to branch {}.", branch_name).green());
+                println!(
+                    "{}",
+                    format!("Successfully switched to branch {}.", branch_name).green()
+                );
             } else {
                 return Err(anyhow::anyhow!("Failed to create branch {}.", branch_name));
             }
@@ -49,10 +59,16 @@ pub fn exec(action: IssueAction) -> Result<()> {
             let branch = String::from_utf8(output.stdout)?.trim().to_string();
 
             if !branch.starts_with("issue-") {
-                return Err(anyhow::anyhow!("Not on an IDD issue branch. Current branch: {}", branch));
+                return Err(anyhow::anyhow!(
+                    "Not on an IDD issue branch. Current branch: {}",
+                    branch
+                ));
             }
 
-            println!("{}", format!("Finishing issue on branch {}...", branch).cyan());
+            println!(
+                "{}",
+                format!("Finishing issue on branch {}...", branch).cyan()
+            );
             println!("{}", "Next steps:".yellow());
             println!("1. git push origin {}", branch);
             println!("2. gh pr create --fill");
