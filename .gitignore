@@ -1,1 +1,5 @@
 /target
+.firebase/
+landing-page/.angular/
+landing-page/dist/
+landing-page/node_modules/
