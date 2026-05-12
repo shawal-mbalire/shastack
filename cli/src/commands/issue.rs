@@ -7,10 +7,24 @@ use std::process::Command;
 pub fn exec(action: IssueAction) -> Result<()> {
     match action {
         IssueAction::Start { id, description } => {
+            let desc = match description {
+                Some(d) => d,
+                None => {
+                    println!("{}", "Fetching issue title from GitHub...".cyan());
+                    let output = Command::new("gh")
+                        .args(["issue", "view", &id.to_string(), "--json", "title", "-q", ".title"])
+                        .output()?;
+                    if !output.status.success() {
+                        return Err(anyhow::anyhow!("Failed to fetch issue from GitHub. Ensure 'gh' is installed and authenticated."));
+                    }
+                    String::from_utf8(output.stdout)?.trim().to_string()
+                }
+            };
+
             let branch_name = format!(
                 "issue-{}-{}",
                 id,
-                description.replace(' ', "-").to_lowercase()
+                desc.replace(' ', "-").replace(|c: char| !c.is_alphanumeric() && c != '-', "").to_lowercase()
             );
             println!(
                 "{}",
@@ -69,9 +83,22 @@ pub fn exec(action: IssueAction) -> Result<()> {
                 "{}",
                 format!("Finishing issue on branch {}...", branch).cyan()
             );
-            println!("{}", "Next steps:".yellow());
-            println!("1. git push origin {}", branch);
-            println!("2. gh pr create --fill");
+            
+            println!("{}", "Pushing branch to origin...".cyan());
+            Command::new("git")
+                .args(["push", "origin", &branch])
+                .status()?;
+
+            println!("{}", "Creating Pull Request...".cyan());
+            let status = Command::new("gh")
+                .args(["pr", "create", "--fill"])
+                .status()?;
+
+            if status.success() {
+                println!("{}", "Issue finished and PR created successfully!".green());
+            } else {
+                println!("{}", "PR creation failed. You might need to do it manually.".yellow());
+            }
         }
     }
     Ok(())

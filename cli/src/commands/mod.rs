@@ -40,7 +40,7 @@ pub enum Commands {
     /// Updates Semantic Versioning for the project
     Version {
         /// Version component to increment
-        #[arg(value_parser = ["major", "minor", "patch"])]
+        #[arg(value_parser = ["major", "minor", "patch", "auto"])]
         component: Option<String>,
     },
     /// Manages project-wide environment variables
@@ -78,7 +78,12 @@ pub enum Commands {
 #[derive(Subcommand)]
 pub enum IssueAction {
     /// Starts a new issue by creating a branch
-    Start { id: u64, description: String },
+    Start {
+        /// GitHub issue ID
+        id: u64,
+        /// Optional description (will fetch from GitHub if omitted)
+        description: Option<String>,
+    },
     /// Shows the current issue context
     Status,
     /// Finalizes the current issue and prepares for PR
