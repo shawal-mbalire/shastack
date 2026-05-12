@@ -144,6 +144,62 @@ jobs:
         run: pio run
 "#;
 
+const LANDING_CI_TEMPLATE: &str = r#"name: Landing CI
+
+on:
+  push:
+    paths:
+      - 'landing/**'
+  pull_request:
+    paths:
+      - 'landing/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: landing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies and run tests
+        run: |
+          just deps
+          just test
+"#;
+
+const PYTHON_CI_TEMPLATE: &str = r#"name: Python CI
+
+on:
+  push:
+    paths:
+      - 'web/server/**'
+      - 'ml/**'
+  pull_request:
+    paths:
+      - 'web/server/**'
+      - 'ml/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v5
+      - name: Install dependencies and run tests
+        run: |
+          just deps
+          just test
+"#;
+
 pub fn find_root() -> Result<PathBuf> {
     let mut current = std::env::current_dir()?;
     loop {
@@ -186,8 +242,19 @@ fn create_feature_dir(root: &Path, feature: &str) -> Result<()> {
         "web" | "Web Frontend (Angular)" | "Web Backend (Flask)" => {
             fs::create_dir_all(root.join("web/client"))?;
             fs::create_dir_all(root.join("web/server"))?;
-            scaffold::scaffold_web(root)?;
+            if feature == "Web Frontend (Angular)" {
+                scaffold::scaffold_web_client(root)?;
+            } else if feature == "Web Backend (Flask)" {
+                scaffold::scaffold_flask(root)?;
+            } else {
+                scaffold::scaffold_web(root)?;
+            }
             "web"
+        }
+        "landing" | "Landing Page (Angular)" => {
+            fs::create_dir_all(root.join("landing"))?;
+            scaffold::scaffold_landing(root)?;
+            "landing"
         }
         "mobile" | "Mobile App (Flutter)" => {
             fs::create_dir_all(root.join("mobile/app"))?;
@@ -222,10 +289,17 @@ fn create_feature_dir(root: &Path, feature: &str) -> Result<()> {
     fs::create_dir_all(&ci_dir)?;
 
     let ci_content = match feature_path {
-        "web" => WEB_CI_TEMPLATE.to_string(),
+        "web" => {
+            if feature == "Web Backend (Flask)" {
+                PYTHON_CI_TEMPLATE.to_string()
+            } else {
+                WEB_CI_TEMPLATE.to_string()
+            }
+        }
+        "landing" => LANDING_CI_TEMPLATE.to_string(),
         "mobile" => MOBILE_CI_TEMPLATE.to_string(),
         "research" => RESEARCH_CI_TEMPLATE.to_string(),
-        "ml" => ML_CI_TEMPLATE.to_string(),
+        "ml" => PYTHON_CI_TEMPLATE.to_string(),
         "hardware" => HARDWARE_CI_TEMPLATE.to_string(),
         _ => format!(
             "name: {} CI\n\non:\n  push:\n    paths:\n      - '{}/**'\n  pull_request:\n    paths:\n      - '{}/**'\n\njobs:\n  validate:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - name: No module checks configured\n        run: echo 'No CI template configured for {}'\n",

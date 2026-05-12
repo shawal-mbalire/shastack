@@ -1012,8 +1012,11 @@ const RESEARCH_REFERENCES_BIB: &str = r##"@article{example2024,
 
 const RESEARCH_JUSTFILE: &str = r##"set shell := ["bash", "-uc"]
 
-# Compile the PDF
-build:
+# Compile the PDF (alias for pdf)
+build: pdf
+
+# Generate PDF from main.tex
+pdf:
     pdflatex -interaction=nonstopmode main.tex
     biber main
     pdflatex -interaction=nonstopmode main.tex
@@ -1371,16 +1374,19 @@ push-model repo="":
 const HARDWARE_PLATFORMIO_INI: &str = r##"[env:esp32dev]
 platform = espressif32
 board = esp32dev
-framework = arduino
+framework = espidf
 monitor_speed = 115200
-build_flags =
-    -DCORE_DEBUG_LEVEL=3
-    -DBOARD_HAS_PSRAM
-lib_deps =
-    ESP32 BLE Arduino
-    AsyncTCP
-    ESPAsyncWebServer
 upload_protocol = esptool
+"##;
+
+const HARDWARE_CMAKE_LISTS: &str = r##"cmake_minimum_required(VERSION 3.16)
+
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+project(firmware)
+"##;
+
+const HARDWARE_SRC_CMAKE_LISTS: &str = r##"idf_component_register(SRCS "main.cpp"
+                    INCLUDE_DIRS ".")
 "##;
 
 const HARDWARE_VERSION: &str = r##"0.1.0
@@ -1392,152 +1398,121 @@ const HARDWARE_CONFIG_H: &str = r##"#pragma once
 #define WIFI_SSID       ""
 #define WIFI_PASSWORD   ""
 
-// --- OTA ---
-#define OTA_PASSWORD    "ota_password"
-#define OTA_HOSTNAME    "device-hostname"
-
 // --- Firmware ---
 #define FIRMWARE_VERSION "0.1.0"
-
-// --- Watchdog ---
-#define WDT_TIMEOUT_SECONDS 30
 "##;
 
-const HARDWARE_WATCHDOG_H: &str = r##"#pragma once
-#include <esp_task_wdt.h>
-
-class Watchdog {
-public:
-    static void init(uint32_t timeout_seconds) {
-        esp_task_wdt_config_t wdt_config = {
-            .timeout_ms = timeout_seconds * 1000,
-            .idle_core_mask = 0,
-            .trigger_panic = true,
-        };
-        esp_task_wdt_reconfigure(&wdt_config);
-        esp_task_wdt_add(NULL);
-    }
-
-    static void reset() {
-        esp_task_wdt_reset();
-    }
-
-    static void deinit() {
-        esp_task_wdt_delete(NULL);
-    }
-};
-"##;
-
-const HARDWARE_OTA_H: &str = r##"#pragma once
-#include <ArduinoOTA.h>
-#include <WiFi.h>
+const HARDWARE_MAIN_CPP: &str = r##"#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_system.h"
+#include "esp_log.h"
 #include "config.h"
 
-class OTAUpdater {
-public:
-    static void init() {
-        ArduinoOTA.setHostname(OTA_HOSTNAME);
-        ArduinoOTA.setPassword(OTA_PASSWORD);
+static const char *TAG = "APP";
 
-        ArduinoOTA.onStart([]() {
-            String type = (ArduinoOTA.getCommand() == U_FLASH) ? "sketch" : "filesystem";
-            Serial.println("[OTA] Start updating " + type);
-        });
+extern "C" void app_main(void)
+{
+    ESP_LOGI(TAG, "[BOOT] Firmware v%s", FIRMWARE_VERSION);
 
-        ArduinoOTA.onEnd([]() {
-            Serial.println("\n[OTA] Update complete. Rebooting...");
-        });
-
-        ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-            Serial.printf("[OTA] Progress: %u%%\r", (progress / (total / 100)));
-        });
-
-        ArduinoOTA.onError([](ota_error_t error) {
-            Serial.printf("[OTA] Error[%u]: ", error);
-            if (error == OTA_AUTH_ERROR)         Serial.println("Auth Failed");
-            else if (error == OTA_BEGIN_ERROR)   Serial.println("Begin Failed");
-            else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-            else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-            else if (error == OTA_END_ERROR)     Serial.println("End Failed");
-        });
-
-        ArduinoOTA.begin();
-        Serial.println("[OTA] Ready. IP: " + WiFi.localIP().toString());
+    while (1) {
+        ESP_LOGI(TAG, "Hello from shastack ESP-IDF!");
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
-
-    static void handle() {
-        ArduinoOTA.handle();
-    }
-};
-"##;
-
-const HARDWARE_MAIN_CPP: &str = r##"#include <Arduino.h>
-#include <WiFi.h>
-#include "config.h"
-#include "ota.h"
-#include "watchdog.h"
-
-void setup() {
-    Serial.begin(115200);
-    Serial.println("[BOOT] Firmware v" FIRMWARE_VERSION);
-
-    // Initialize watchdog (reboots device if loop() stalls)
-    Watchdog::init(WDT_TIMEOUT_SECONDS);
-
-    // Connect to WiFi
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    Serial.print("[WiFi] Connecting");
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-        Watchdog::reset();
-    }
-    Serial.println("\n[WiFi] Connected: " + WiFi.localIP().toString());
-
-    // Initialize OTA updater
-    OTAUpdater::init();
-
-    Serial.println("[BOOT] Setup complete.");
-}
-
-void loop() {
-    Watchdog::reset();      // Feed the watchdog
-    OTAUpdater::handle();   // Listen for OTA updates
-
-    // --- Application Logic ---
-    // Add sensor reads, DMA transfers, and business logic here.
-
-    delay(10);
 }
 "##;
 
 const HARDWARE_JUSTFILE: &str = r##"set shell := ["bash", "-uc"]
 
-# Build firmware
+# Build firmware using idf.py
 build:
-    pio run
+    idf.py build
 
 # Flash firmware to device
 flash:
-    pio run --target upload
+    idf.py flash
 
 # Monitor serial output
 monitor:
-    pio device monitor
+    idf.py monitor
 
-# Run tests (QEMU/native)
+# Run tests
 test:
-    pio test --environment native
+    @echo "No native tests configured for ESP-IDF yet."
 
 # Clean build artifacts
 clean:
-    pio run --target clean
+    idf.py fullclean
 
-# Check for OTA environment variable
+# Deploy via OTA (placeholder)
 deploy target="ota":
     @echo "Deploying via OTA to {{target}}..."
-    pio run --target upload --upload-port $OTA_DEVICE_IP
 "##;
+
+const LANDING_PACKAGE_JSON: &str = r##"{
+  "name": "landing",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "ng serve",
+    "build": "ng build",
+    "test": "ng test"
+  },
+  "dependencies": {
+    "@angular/common": "^18.2.0",
+    "@angular/compiler": "^18.2.0",
+    "@angular/core": "^18.2.0",
+    "@angular/platform-browser": "^18.2.0",
+    "@angular/router": "^18.2.0",
+    "lucide-angular": "^0.460.0",
+    "rxjs": "~7.8.1",
+    "tslib": "^2.6.3",
+    "zone.js": "~0.14.10"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^18.2.0",
+    "@angular/cli": "^18.2.0",
+    "@angular/compiler-cli": "^18.2.0",
+    "typescript": "~5.5.4"
+  }
+}
+"##;
+
+const LANDING_JUSTFILE: &str = r##"set shell := ["bash", "-uc"]
+
+# Run landing page dev server
+run:
+    npm start
+
+# Build landing page
+build:
+    npm run build
+
+# Test landing page
+test:
+    npm test
+
+# Install dependencies
+deps:
+    npm install
+"##;
+
+pub fn scaffold_landing(root: &Path) -> Result<()> {
+    let landing_root = root.join("landing");
+    fs::create_dir_all(landing_root.join("src/app"))?;
+
+    write_file(&landing_root.join("package.json"), LANDING_PACKAGE_JSON)?;
+    write_file(&landing_root.join("justfile"), LANDING_JUSTFILE)?;
+    
+    // Use existing Angular templates for consistency
+    write_file(&landing_root.join("src/main.ts"), WEB_CLIENT_MAIN_TS)?;
+    write_file(&landing_root.join("src/index.html"), WEB_CLIENT_INDEX_HTML)?;
+    write_file(&landing_root.join("src/app/app.component.ts"), WEB_CLIENT_APP_COMPONENT_TS)?;
+    write_file(&landing_root.join("src/app/app.config.ts"), WEB_CLIENT_APP_CONFIG_TS)?;
+    write_file(&landing_root.join("src/app/app.routes.ts"), "export const routes = [];")?;
+
+    Ok(())
+}
 
 fn write_file(path: &Path, content: &str) -> Result<()> {
     if let Some(parent) = path.parent() {
@@ -1547,95 +1522,115 @@ fn write_file(path: &Path, content: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn scaffold_web(root: &Path) -> Result<()> {
-    let client_root = root.join("web/client");
-    let server_root = root.join("web/server");
+const FLASK_PYPROJECT_TOML: &str = r##"[project]
+name = "server"
+version = "0.1.0"
+description = "Flask backend managed by uv"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.0.0",
+    "flask-cors>=4.0.0",
+    "pydantic>=2.6.0",
+    "python-dotenv>=1.0.0",
+]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+"##;
+
+const FLASK_APP_PY: &str = r##"from flask import Flask, jsonify
+from flask_cors import CORS
+import os
+
+app = Flask(__name__)
+CORS(app)
+
+@app.route('/health')
+def health():
+    return jsonify({"status": "ok"})
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+"##;
+
+const FLASK_JUSTFILE: &str = r##"set shell := ["bash", "-uc"]
+
+# Run flask server with uv
+run:
+    uv run python app.py
+
+# Install dependencies with uv
+deps:
+    uv sync
+
+# Run tests
+test:
+    uv run pytest
+"##;
+
+pub fn scaffold_flask(root: &Path) -> Result<()> {
+    let server_root = root.join("web/server");
+    fs::create_dir_all(&server_root)?;
+
+    write_file(&server_root.join("pyproject.toml"), FLASK_PYPROJECT_TOML)?;
+    write_file(&server_root.join("app.py"), FLASK_APP_PY)?;
+    write_file(&server_root.join("justfile"), FLASK_JUSTFILE)?;
+
+    Ok(())
+}
+
+pub fn scaffold_web_client(root: &Path) -> Result<()> {
+    let client_root = root.join("web/client");
     fs::create_dir_all(client_root.join("src/app/core/auth"))?;
     fs::create_dir_all(client_root.join("src/app/core/interceptors"))?;
     fs::create_dir_all(client_root.join("src/app/features/auth"))?;
     fs::create_dir_all(client_root.join("src/app/features/home"))?;
     fs::create_dir_all(client_root.join("src/app/features/shell"))?;
     fs::create_dir_all(client_root.join("src/environments"))?;
-
-    fs::create_dir_all(server_root.join("src/lib"))?;
-    fs::create_dir_all(server_root.join("src/middleware"))?;
-    fs::create_dir_all(server_root.join("src/routes"))?;
-
     write_file(&root.join("web/justfile"), WEB_JUSTFILE)?;
-
     write_file(&client_root.join("package.json"), WEB_CLIENT_PACKAGE_JSON)?;
     write_file(&client_root.join("tsconfig.json"), WEB_CLIENT_TSCONFIG_JSON)?;
     write_file(&client_root.join("src/index.html"), WEB_CLIENT_INDEX_HTML)?;
     write_file(&client_root.join("src/main.ts"), WEB_CLIENT_MAIN_TS)?;
     write_file(&client_root.join("src/styles.scss"), WEB_CLIENT_STYLES_SCSS)?;
-    write_file(
-        &client_root.join("src/app/app.component.ts"),
-        WEB_CLIENT_APP_COMPONENT_TS,
-    )?;
-    write_file(
-        &client_root.join("src/app/app.config.ts"),
-        WEB_CLIENT_APP_CONFIG_TS,
-    )?;
-    write_file(
-        &client_root.join("src/app/app.routes.ts"),
-        WEB_CLIENT_APP_ROUTES_TS,
-    )?;
-    write_file(
-        &client_root.join("src/app/core/auth/auth.service.ts"),
-        WEB_CLIENT_AUTH_SERVICE_TS,
-    )?;
-    write_file(
-        &client_root.join("src/app/core/auth/auth.guard.ts"),
-        WEB_CLIENT_AUTH_GUARD_TS,
-    )?;
-    write_file(
-        &client_root.join("src/app/core/interceptors/auth.interceptor.ts"),
-        WEB_CLIENT_AUTH_INTERCEPTOR_TS,
-    )?;
-    write_file(
-        &client_root.join("src/app/features/shell/shell.component.ts"),
-        WEB_CLIENT_SHELL_COMPONENT_TS,
-    )?;
-    write_file(
-        &client_root.join("src/app/features/shell/shell.routes.ts"),
-        WEB_CLIENT_SHELL_ROUTES_TS,
-    )?;
-    write_file(
-        &client_root.join("src/app/features/auth/login.component.ts"),
-        WEB_CLIENT_LOGIN_COMPONENT_TS,
-    )?;
-    write_file(
-        &client_root.join("src/app/features/home/home.component.ts"),
-        WEB_CLIENT_HOME_COMPONENT_TS,
-    )?;
-    write_file(
-        &client_root.join("src/environments/environment.ts"),
-        WEB_CLIENT_ENVIRONMENT_TS,
-    )?;
-    write_file(
-        &client_root.join("src/environments/environment.prod.ts"),
-        WEB_CLIENT_ENVIRONMENT_PROD_TS,
-    )?;
+    write_file(&client_root.join("src/app/app.component.ts"), WEB_CLIENT_APP_COMPONENT_TS)?;
+    write_file(&client_root.join("src/app/app.config.ts"), WEB_CLIENT_APP_CONFIG_TS)?;
+    write_file(&client_root.join("src/app/app.routes.ts"), WEB_CLIENT_APP_ROUTES_TS)?;
+    write_file(&client_root.join("src/app/core/auth/auth.service.ts"), WEB_CLIENT_AUTH_SERVICE_TS)?;
+    write_file(&client_root.join("src/app/core/auth/auth.guard.ts"), WEB_CLIENT_AUTH_GUARD_TS)?;
+    write_file(&client_root.join("src/app/core/interceptors/auth.interceptor.ts"), WEB_CLIENT_AUTH_INTERCEPTOR_TS)?;
+    write_file(&client_root.join("src/app/features/shell/shell.component.ts"), WEB_CLIENT_SHELL_COMPONENT_TS)?;
+    write_file(&client_root.join("src/app/features/shell/shell.routes.ts"), WEB_CLIENT_SHELL_ROUTES_TS)?;
+    write_file(&client_root.join("src/app/features/auth/login.component.ts"), WEB_CLIENT_LOGIN_COMPONENT_TS)?;
+    write_file(&client_root.join("src/app/features/home/home.component.ts"), WEB_CLIENT_HOME_COMPONENT_TS)?;
+    write_file(&client_root.join("src/environments/environment.ts"), WEB_CLIENT_ENVIRONMENT_TS)?;
+    write_file(&client_root.join("src/environments/environment.prod.ts"), WEB_CLIENT_ENVIRONMENT_PROD_TS)?;
+    Ok(())
+}
 
+pub fn scaffold_web_server_hono(root: &Path) -> Result<()> {
+    let server_root = root.join("web/server");
+    fs::create_dir_all(server_root.join("src/lib"))?;
+    fs::create_dir_all(server_root.join("src/middleware"))?;
+    fs::create_dir_all(server_root.join("src/routes"))?;
+    write_file(&root.join("web/justfile"), WEB_JUSTFILE)?;
     write_file(&server_root.join("package.json"), WEB_SERVER_PACKAGE_JSON)?;
     write_file(&server_root.join("tsconfig.json"), WEB_SERVER_TSCONFIG_JSON)?;
     write_file(&server_root.join(".env.example"), WEB_SERVER_ENV_EXAMPLE)?;
     write_file(&server_root.join("src/lib/logger.ts"), WEB_SERVER_LOGGER_TS)?;
-    write_file(
-        &server_root.join("src/middleware/auth.ts"),
-        WEB_SERVER_AUTH_MIDDLEWARE_TS,
-    )?;
-    write_file(
-        &server_root.join("src/middleware/rbac.ts"),
-        WEB_SERVER_RBAC_MIDDLEWARE_TS,
-    )?;
-    write_file(
-        &server_root.join("src/routes/health.ts"),
-        WEB_SERVER_HEALTH_ROUTE_TS,
-    )?;
+    write_file(&server_root.join("src/middleware/auth.ts"), WEB_SERVER_AUTH_MIDDLEWARE_TS)?;
+    write_file(&server_root.join("src/middleware/rbac.ts"), WEB_SERVER_RBAC_MIDDLEWARE_TS)?;
+    write_file(&server_root.join("src/routes/health.ts"), WEB_SERVER_HEALTH_ROUTE_TS)?;
     write_file(&server_root.join("src/index.ts"), WEB_SERVER_INDEX_TS)?;
+    Ok(())
+}
 
+pub fn scaffold_web(root: &Path) -> Result<()> {
+    scaffold_web_client(root)?;
+    scaffold_web_server_hono(root)?;
     Ok(())
 }
 
@@ -1766,10 +1761,13 @@ pub fn scaffold_hardware(root: &Path) -> Result<()> {
         &hardware_root.join("platformio.ini"),
         HARDWARE_PLATFORMIO_INI,
     )?;
+    write_file(&hardware_root.join("CMakeLists.txt"), HARDWARE_CMAKE_LISTS)?;
+    write_file(
+        &hardware_root.join("src/CMakeLists.txt"),
+        HARDWARE_SRC_CMAKE_LISTS,
+    )?;
     write_file(&hardware_root.join("VERSION"), HARDWARE_VERSION)?;
     write_file(&hardware_root.join("src/config.h"), HARDWARE_CONFIG_H)?;
-    write_file(&hardware_root.join("src/watchdog.h"), HARDWARE_WATCHDOG_H)?;
-    write_file(&hardware_root.join("src/ota.h"), HARDWARE_OTA_H)?;
     write_file(&hardware_root.join("src/main.cpp"), HARDWARE_MAIN_CPP)?;
     write_file(&hardware_root.join("justfile"), HARDWARE_JUSTFILE)?;
 

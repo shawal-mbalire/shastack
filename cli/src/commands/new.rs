@@ -12,6 +12,7 @@ pub fn exec(name: String) -> Result<()> {
     let options = vec![
         "Web Frontend (Angular)",
         "Web Backend (Flask)",
+        "Landing Page (Angular)",
         "Mobile App (Flutter)",
         "Research (LaTeX)",
         "ML (Python/Notebooks)",
