@@ -15,26 +15,14 @@ fn main() -> Result<()> {
         Commands::Add { feature } => {
             commands::add::exec(feature)?;
         }
+        Commands::Restore => {
+            commands::restore::exec()?;
+        }
         Commands::Version { component } => {
             commands::version::exec(component)?;
         }
         Commands::Env { action } => {
             commands::env::exec(action)?;
-        }
-        Commands::Run { feature } => {
-            commands::wrappers::run(feature)?;
-        }
-        Commands::Build { feature } => {
-            commands::wrappers::build(feature)?;
-        }
-        Commands::Test { feature } => {
-            commands::wrappers::test(feature)?;
-        }
-        Commands::Flash => {
-            commands::wrappers::flash()?;
-        }
-        Commands::Deploy { feature, target } => {
-            commands::wrappers::deploy(feature, target)?;
         }
         Commands::SyncApi => {
             commands::sync_api::exec()?;

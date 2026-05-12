@@ -6,9 +6,9 @@ pub mod issue;
 pub mod new;
 pub mod pulse;
 pub mod registry;
+pub mod restore;
 pub mod sync_api;
 pub mod version;
-pub mod wrappers;
 
 use clap::{Parser, Subcommand};
 
@@ -32,6 +32,8 @@ pub enum Commands {
         /// Feature to add
         feature: String,
     },
+    /// Ensures all enabled features have their required files/folders
+    Restore,
     /// Updates Semantic Versioning for the project
     Version {
         /// Version component to increment
@@ -42,31 +44,6 @@ pub enum Commands {
     Env {
         #[command(subcommand)]
         action: EnvAction,
-    },
-    /// Executes the development environment
-    Run {
-        /// Feature to run
-        feature: String,
-    },
-    /// Compiles artifacts
-    Build {
-        /// Feature to build
-        feature: String,
-    },
-    /// Runs the test suite
-    Test {
-        /// Feature to test
-        feature: String,
-    },
-    /// Deploys firmware to hardware
-    Flash,
-    /// Triggers deployment pipelines
-    Deploy {
-        /// Feature to deploy
-        feature: String,
-        /// Target platform
-        #[arg(long)]
-        target: String,
     },
     /// Automatically generates clients from Zod/Pydantic definitions
     SyncApi,

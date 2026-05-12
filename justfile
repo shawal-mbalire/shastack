@@ -2,16 +2,34 @@ set shell := ["bash", "-uc"]
 
 # --- Global Commands ---
 
-# Install all system and project dependencies
-deps:
+# Setup system tools and restore workspace structure
+setup:
     sha deps
+    sha restore
 
-# Synchronize all APIs and rebuild artifacts
-sync-all:
+# Install project-wide and module dependencies
+deps:
+    @for dir in web/client web/server ml mobile/app landing research hardware; do \
+        if [ -d "$dir" ]; then \
+            echo "Installing dependencies in $dir..."; \
+            (cd "$dir" && just deps); \
+        fi; \
+    done
+
+# Run tests across all modules
+test module="all":
+    @for dir in web/client web/server ml mobile/app landing research hardware; do \
+        if [ -d "$dir" ] && ([ "{{module}}" = "all" ] || [ "{{module}}" = "$dir" ]); then \
+            echo "Testing $dir..."; \
+            (cd "$dir" && just test); \
+        fi; \
+    done
+
+# Synchronize all APIs
+sync-api:
     sha sync-api
-    just build
 
-# Check the health of all modules
+# Check workspace health
 pulse:
     sha pulse
 

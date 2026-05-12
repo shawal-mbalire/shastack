@@ -208,7 +208,7 @@ pub fn add_feature(root: &Path, feature: &str) -> Result<()> {
     Ok(())
 }
 
-fn create_feature_dir(root: &Path, feature: &str) -> Result<()> {
+pub fn create_feature_dir(root: &Path, feature: &str) -> Result<()> {
     let feature_path = match feature {
         "web" | "Web Frontend (Angular)" | "Web Backend (Flask)" => {
             fs::create_dir_all(root.join("web/client"))?;
