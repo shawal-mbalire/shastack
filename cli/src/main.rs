@@ -8,6 +8,11 @@ use commands::{Cli, Commands};
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
+    // Check for updates on every run, unless it's the upgrade command itself
+    if !matches!(cli.command, Commands::Upgrade) {
+        let _ = commands::update::check_for_updates();
+    }
+
     match cli.command {
         Commands::New { name } => {
             commands::new::exec(name)?;
@@ -17,6 +22,9 @@ fn main() -> Result<()> {
         }
         Commands::Restore => {
             commands::restore::exec()?;
+        }
+        Commands::Upgrade => {
+            commands::update::check_for_updates()?;
         }
         Commands::Version { component } => {
             commands::version::exec(component)?;

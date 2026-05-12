@@ -8,6 +8,7 @@ pub mod pulse;
 pub mod registry;
 pub mod restore;
 pub mod sync_api;
+pub mod update;
 pub mod version;
 
 use clap::{Parser, Subcommand};
@@ -34,6 +35,8 @@ pub enum Commands {
     },
     /// Ensures all enabled features have their required files/folders
     Restore,
+    /// Checks for and installs updates for the sha CLI
+    Upgrade,
     /// Updates Semantic Versioning for the project
     Version {
         /// Version component to increment
