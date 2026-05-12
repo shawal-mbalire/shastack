@@ -47,32 +47,32 @@ export class FeaturesComponent {
       icon: Globe,
       title: 'Web',
       description:
-        'Angular frontend + Bun/Hono backend, RBAC, Zod/Pydantic validation'
+        'Angular client + Hono (Bun) or Flask (uv) backends, RBAC, and Zod/Pydantic validation.'
     },
     {
       icon: Smartphone,
       title: 'Mobile',
-      description: 'Flutter with Drift (offline-first), Riverpod, biometric auth'
+      description: 'Flutter with Drift (offline-first), Riverpod, and biometric auth patterns.'
     },
     {
       icon: FlaskConical,
       title: 'Research',
-      description: 'LaTeX workspace with modular chapters and CI PDF generation'
+      description: 'LaTeX workspace with modular chapters, semantic justfiles, and CI PDF generation.'
     },
     {
       icon: BrainCircuit,
       title: 'ML',
-      description: 'Polars + scikit-learn, reproducible pipelines, HuggingFace integration'
+      description: 'uv-managed Python environments, Polars + scikit-learn, and reproducible pipelines.'
     },
     {
       icon: Cpu,
       title: 'Hardware',
-      description: 'ESP32 firmware with watchdog, OTA updates, PlatformIO'
+      description: 'ESP32 firmware (ESP-IDF, Arduino, MicroPython, Rust) with watchdog and OTA patterns.'
     },
     {
       icon: GitBranch,
       title: 'Issue-Driven',
-      description: 'IDD workflow: every task on a branch, traceable commits'
+      description: 'IDD workflow: automated branch creation and PR management via gh CLI integration.'
     }
   ] as const;
 }

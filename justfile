@@ -39,8 +39,8 @@ pulse:
 build:
     cargo build -p sha
 
-# Run unit tests
-test:
+# Run unit tests for the sha CLI
+test-cli:
     cargo test -p sha
 
 # Install the sha CLI locally

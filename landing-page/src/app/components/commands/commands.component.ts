@@ -43,39 +43,39 @@ export class CommandsComponent {
   readonly commands = [
     {
       name: 'sha new <name>',
-      description: 'Scaffold a new workspace'
+      description: 'Scaffold a new universal workspace'
     },
     {
       name: 'sha add <feature>',
-      description: 'Add a module to existing workspace'
+      description: 'Add a module or current dir (sha add .)'
     },
     {
-      name: 'sha run <feature>',
-      description: 'Run the dev server'
+      name: 'sha restore',
+      description: 'Repair missing files in enabled features'
     },
     {
-      name: 'sha build <feature>',
-      description: 'Compile artifacts'
-    },
-    {
-      name: 'sha test <feature>',
-      description: 'Run tests'
-    },
-    {
-      name: 'sha deploy <feature> --target',
-      description: 'Deploy to target'
+      name: 'sha upgrade',
+      description: 'Self-update the sha CLI to latest'
     },
     {
       name: 'sha pulse',
-      description: 'Health check all modules'
+      description: 'Check health status across all modules'
     },
     {
-      name: 'sha issue start <id> <desc>',
-      description: 'Start an IDD branch'
+      name: 'sha version auto',
+      description: 'Automated SemVer via Conventional Commits'
     },
     {
-      name: 'sha registry pin <model>',
-      description: 'Pin a model to git hash'
+      name: 'sha issue start <id>',
+      description: 'Fetch issue & start IDD branch via gh'
+    },
+    {
+      name: 'sha sync-api',
+      description: 'Coordinate types across the stack'
+    },
+    {
+      name: 'just <command>',
+      description: 'Task execution (build, test, run, flash)'
     }
   ] as const;
 }
