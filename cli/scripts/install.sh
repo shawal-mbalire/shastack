@@ -37,7 +37,16 @@ DOWNLOAD_URL="https://github.com/${REPO}/releases/latest/download/${ASSET}"
 
 echo "Downloading ${ASSET}..."
 TMP=$(mktemp)
-curl -sSfL "$DOWNLOAD_URL" -o "$TMP"
+if ! curl -sSfL "$DOWNLOAD_URL" -o "$TMP"; then
+  echo ""
+  echo "Error: Could not download binary from GitHub."
+  echo "This usually means a release for your platform ($OS-$ARCH) hasn't been published yet."
+  echo ""
+  echo "Fallback: Build from source"
+  echo "  1. Clone the repo: git clone https://github.com/${REPO}"
+  echo "  2. Run: cd shastack && just install"
+  exit 1
+fi
 chmod +x "$TMP"
 
 # --- Choose install location ---
