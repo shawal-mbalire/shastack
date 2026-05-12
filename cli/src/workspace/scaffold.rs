@@ -1752,6 +1752,141 @@ pub fn scaffold_ml(root: &Path) -> Result<()> {
     Ok(())
 }
 
+const ARDUINO_MAIN_CPP: &str = r##"#include <Arduino.h>
+
+void setup() {
+    Serial.begin(115200);
+    Serial.println("Hello from shastack Arduino!");
+}
+
+void loop() {
+    delay(1000);
+}
+"##;
+
+const ARDUINO_JUSTFILE: &str = r##"set shell := ["bash", "-uc"]
+
+# Build Arduino firmware (using arduino-cli)
+build:
+    arduino-cli compile --fqbn esp32:esp32:esp32dev .
+
+# Flash Arduino firmware (using avrdude or arduino-cli)
+flash:
+    arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:esp32dev .
+"##;
+
+const MICROPYTHON_MAIN_PY: &str = r##"import time
+
+print("Hello from shastack MicroPython!")
+
+while True:
+    time.sleep(1)
+"##;
+
+const MICROPYTHON_PYPROJECT_TOML: &str = r##"[project]
+name = "firmware"
+version = "0.1.0"
+description = "MicroPython firmware managed by uv"
+requires-python = ">=3.11"
+dependencies = [
+    "mpy-cross-v7>=1.20.0",
+]
+"##;
+
+const MICROPYTHON_JUSTFILE: &str = r##"set shell := ["bash", "-uc"]
+
+# Install dependencies with uv
+deps:
+    uv sync
+
+# Flash MicroPython firmware (using mpremote or ampy)
+flash:
+    uv run mpremote run main.py
+"##;
+
+const RUST_EMBEDDED_MAIN_RS: &str = r##"#![no_std]
+#![no_main]
+
+use esp_backtrace as _;
+use esp_hal::{clock::ClockControl, peripherals::Peripherals, prelude::*, Delay};
+use esp_println::println;
+
+#[entry]
+fn main() -> ! {
+    let peripherals = Peripherals::take();
+    let system = peripherals.SYSTEM.split();
+    let clocks = ClockControl::boot_defaults(system.clock_control).freeze();
+    let mut delay = Delay::new(&clocks);
+
+    println!("Hello from shastack Embedded Rust!");
+
+    loop {
+        println!("Looping...");
+        delay.delay_ms(1000u32);
+    }
+}
+"##;
+
+const RUST_EMBEDDED_CARGO_TOML: &str = r##"[package]
+name = "firmware"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+esp-hal = { version = "0.17.0", features = ["esp32"] }
+esp-backtrace = { version = "0.11.0", features = ["esp32", "panic-handler", "println"] }
+esp-println = { version = "0.9.0", features = ["esp32", "log"] }
+
+[profile.release]
+opt-level = "s"
+
+[profile.dev]
+opt-level = "z"
+"##;
+
+const RUST_EMBEDDED_JUSTFILE: &str = r##"set shell := ["bash", "-uc"]
+
+# Build embedded Rust firmware
+build:
+    cargo build --release
+
+# Flash embedded Rust firmware (using espflash)
+flash:
+    cargo espflash flash --release --monitor
+"##;
+
+pub fn scaffold_arduino(root: &Path) -> Result<()> {
+    let hardware_root = root.join("hardware");
+    fs::create_dir_all(&hardware_root)?;
+
+    write_file(&hardware_root.join("firmware.ino"), ARDUINO_MAIN_CPP)?;
+    write_file(&hardware_root.join("justfile"), ARDUINO_JUSTFILE)?;
+
+    Ok(())
+}
+
+pub fn scaffold_micropython(root: &Path) -> Result<()> {
+    let hardware_root = root.join("hardware");
+    fs::create_dir_all(&hardware_root)?;
+
+    write_file(&hardware_root.join("main.py"), MICROPYTHON_MAIN_PY)?;
+    write_file(&hardware_root.join("pyproject.toml"), MICROPYTHON_PYPROJECT_TOML)?;
+    write_file(&hardware_root.join("justfile"), MICROPYTHON_JUSTFILE)?;
+
+    Ok(())
+}
+
+pub fn scaffold_rust_embedded(root: &Path) -> Result<()> {
+    let hardware_root = root.join("hardware");
+    fs::create_dir_all(hardware_root.join("src"))?;
+
+    write_file(&hardware_root.join("src/main.rs"), RUST_EMBEDDED_MAIN_RS)?;
+    write_file(&hardware_root.join("Cargo.toml"), RUST_EMBEDDED_CARGO_TOML)?;
+    write_file(&hardware_root.join("justfile"), RUST_EMBEDDED_JUSTFILE)?;
+
+    Ok(())
+}
+
 pub fn scaffold_hardware(root: &Path) -> Result<()> {
     let hardware_root = root.join("hardware");
 

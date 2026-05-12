@@ -274,7 +274,19 @@ fn create_feature_dir(root: &Path, feature: &str) -> Result<()> {
             scaffold::scaffold_ml(root)?;
             "ml"
         }
-        "hardware" | "Hardware (Firmware)" => {
+        "hardware" | "Hardware (Arduino/C++)" => {
+            scaffold::scaffold_arduino(root)?;
+            "hardware"
+        }
+        "Hardware (MicroPython/uv)" => {
+            scaffold::scaffold_micropython(root)?;
+            "hardware"
+        }
+        "Hardware (Embedded Rust)" => {
+            scaffold::scaffold_rust_embedded(root)?;
+            "hardware"
+        }
+        "Hardware (Firmware)" => {
             fs::create_dir_all(root.join("hardware/src"))?;
             scaffold::scaffold_hardware(root)?;
             "hardware"

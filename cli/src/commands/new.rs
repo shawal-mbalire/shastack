@@ -16,10 +16,16 @@ pub fn exec(name: String) -> Result<()> {
         "Mobile App (Flutter)",
         "Research (LaTeX)",
         "ML (Python/Notebooks)",
-        "Hardware (Firmware)",
+        "Hardware (Arduino/C++)",
+        "Hardware (MicroPython/uv)",
+        "Hardware (Embedded Rust)",
     ];
 
-    let selected_features = MultiSelect::new("Select features to enable:", options).prompt()?;
+    let selected_features = MultiSelect::new("Select features to enable:", options)
+        .with_vim_mode(true)
+        .with_filter_input_enabled(false)
+        .with_help_message("↑↓/jk to move, space to select, enter to confirm")
+        .prompt()?;
 
     workspace::init(&name, selected_features)?;
 
