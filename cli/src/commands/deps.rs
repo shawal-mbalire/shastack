@@ -1,3 +1,4 @@
+use crate::workspace;
 use anyhow::Result;
 use colored::*;
 use std::process::Command;
@@ -12,7 +13,58 @@ pub fn exec() -> Result<()> {
     install_uv_if_missing()?;
     install_angular_cli_if_missing()?;
 
-    println!("{}", "All requested tools are present.".green());
+    println!("{}", "System-wide tools are present.".green());
+
+    let root = match workspace::find_root() {
+        Ok(r) => r,
+        Err(_) => {
+            println!("{}", "Not in a shastack workspace, skipping project dependencies.".yellow());
+            return Ok(());
+        }
+    };
+
+    println!(
+        "{}",
+        format!("Installing project dependencies in workspace: {:?}", root).cyan()
+    );
+
+    // Get features from config.json
+    let config_path = root.join(".sha/config.json");
+    let manifest: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(config_path)?)?;
+    let features = manifest["features"]
+        .as_array()
+        .ok_or_else(|| anyhow::anyhow!("Invalid config.json"))?;
+
+    for feature in features {
+        let feature_name = feature.as_str().unwrap_or("");
+        let feature_path = match feature_name {
+            "Web Frontend (Angular)" | "Web Backend (Flask)" => "web",
+            "Landing Page (Angular)" => "landing",
+            "Mobile App (Flutter)" => "mobile",
+            "Research (LaTeX)" => "research",
+            "ML (Python/Notebooks)" => "ml",
+            "Hardware (Arduino/C++)" | "Hardware (MicroPython/uv)" | "Hardware (Embedded Rust)" => "hardware",
+            _ => feature_name,
+        };
+
+        let dir = root.join(feature_path);
+        if dir.exists() && dir.join("justfile").exists() {
+            println!("{}", format!("Installing dependencies for {}...", feature_name).cyan());
+            let status = Command::new("just")
+                .arg("deps")
+                .current_dir(&dir)
+                .status();
+            
+            if let Ok(s) = status {
+                if s.success() {
+                    println!("{}", format!("Dependencies for {} installed successfully.", feature_name).green());
+                } else {
+                    println!("{}", format!("Failed to install dependencies for {}.", feature_name).red());
+                }
+            }
+        }
+    }
+
     Ok(())
 }
 

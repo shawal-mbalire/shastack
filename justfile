@@ -1,5 +1,20 @@
 set shell := ["bash", "-uc"]
 
+# --- Global Commands ---
+
+# Install all system and project dependencies
+deps:
+    sha deps
+
+# Synchronize all APIs and rebuild artifacts
+sync-all:
+    sha sync-api
+    just build
+
+# Check the health of all modules
+pulse:
+    sha pulse
+
 # --- Development ---
 
 # Build the sha CLI

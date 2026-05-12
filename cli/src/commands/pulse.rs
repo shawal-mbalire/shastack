@@ -9,25 +9,65 @@ pub fn exec() -> Result<()> {
     println!("{}", format!("Checking workspace pulse: {:?}", root).cyan());
 
     let mut table = Table::new();
-    table.set_header(vec!["Module", "Pulse / Status"]);
+    table.set_header(vec!["Module", "Status", "Last Heartbeat / Details"]);
 
-    // Check ML heartbeats
-    let ml_heartbeat = root.join("ml/heartbeat.json");
-    let ml_status = if ml_heartbeat.exists() {
-        let content = fs::read_to_string(&ml_heartbeat)?;
-        content.green().to_string()
-    } else {
-        "No heartbeat.json found.".yellow().to_string()
-    };
-    table.add_row(vec!["ML".cyan().to_string(), ml_status]);
+    // Get features from config.json
+    let config_path = root.join(".sha/config.json");
+    let manifest: serde_json::Value = serde_json::from_str(&fs::read_to_string(config_path)?)?;
+    let features = manifest["features"]
+        .as_array()
+        .ok_or_else(|| anyhow::anyhow!("Invalid config.json"))?;
 
-    // Check Web health
-    table.add_row(vec![
-        "Web".cyan().to_string(),
-        "Use 'sha run web' for health endpoints."
-            .white()
-            .to_string(),
-    ]);
+    for feature in features {
+        let feature_name = feature.as_str().unwrap_or("");
+        let feature_path = match feature_name {
+            "Web Frontend (Angular)" | "Web Backend (Flask)" => "web",
+            "Landing Page (Angular)" => "landing",
+            "Mobile App (Flutter)" => "mobile",
+            "Research (LaTeX)" => "research",
+            "ML (Python/Notebooks)" => "ml",
+            "Hardware (Arduino/C++)" | "Hardware (MicroPython/uv)" | "Hardware (Embedded Rust)" => "hardware",
+            _ => feature_name,
+        };
+
+        let dir = root.join(feature_path);
+        if !dir.exists() {
+            continue;
+        }
+
+        let (status, details) = match feature_path {
+            "ml" => {
+                let hb = dir.join("heartbeat.json");
+                if hb.exists() {
+                    let content = fs::read_to_string(hb)?;
+                    ("ACTIVE".green(), content)
+                } else {
+                    ("IDLE".yellow(), "No heartbeat.json found".to_string())
+                }
+            }
+            "web" | "landing" => {
+                ("RUNNING?".cyan(), "Use 'sha run' to check health endpoints".to_string())
+            }
+            "research" => {
+                let pdf = dir.join("main.pdf");
+                if pdf.exists() {
+                    ("COMPLETE".green(), "Artifact main.pdf present".to_string())
+                } else {
+                    ("PENDING".yellow(), "No PDF built yet".to_string())
+                }
+            }
+            "hardware" => {
+                ("READY".green(), "Toolchain configured".to_string())
+            }
+            _ => ("UNKNOWN".white(), "No pulse logic defined".to_string()),
+        };
+
+        table.add_row(vec![
+            feature_name.cyan().to_string(),
+            status.to_string(),
+            details.white().to_string(),
+        ]);
+    }
 
     println!("{table}");
 

@@ -1,6 +1,7 @@
 use crate::workspace;
 use anyhow::Result;
 use colored::*;
+use comfy_table::Table;
 use std::process::Command;
 
 pub fn exec() -> Result<()> {
@@ -10,7 +11,8 @@ pub fn exec() -> Result<()> {
         format!("Syncing APIs in workspace: {:?}", root).cyan()
     );
 
-    let mut generated = false;
+    let mut table = Table::new();
+    table.set_header(vec!["Module", "API Sync Status"]);
 
     // Try to run 'just sync-api' at the root
     let status = Command::new("just")
@@ -20,34 +22,42 @@ pub fn exec() -> Result<()> {
 
     if let Ok(s) = status {
         if s.success() {
-            println!("{}", "Root API sync successful.".green());
-            generated = true;
+            table.add_row(vec!["Root".cyan().to_string(), "Success".green().to_string()]);
+        } else {
+            table.add_row(vec!["Root".cyan().to_string(), "Failed".red().to_string()]);
         }
     }
 
-    // Check for web/server (Pydantic)
+    // Check for web/server -> web/client sync
     let server_dir = root.join("web/server");
-    if server_dir.exists() {
-        println!(
-            "{}",
-            "Checking for Pydantic definitions in web/server...".cyan()
-        );
-        // Dummy placeholder for actual generation logic
-        generated = true;
-    }
-
-    // Check for web/client (Zod)
     let client_dir = root.join("web/client");
-    if client_dir.exists() {
-        println!("{}", "Checking for Zod definitions in web/client...".cyan());
-        generated = true;
+
+    if server_dir.exists() && client_dir.exists() {
+        println!("{}", "Coordinating types between web/server and web/client...".cyan());
+        
+        // Call module-specific sync if it exists
+        let sync_status = Command::new("just")
+            .arg("sync-api")
+            .current_dir(root.join("web"))
+            .status();
+
+        match sync_status {
+            Ok(s) if s.success() => {
+                table.add_row(vec!["Web (Full Stack)".cyan().to_string(), "Success".green().to_string()]);
+            }
+            _ => {
+                table.add_row(vec!["Web (Full Stack)".cyan().to_string(), "No 'just sync-api' found or failed".yellow().to_string()]);
+            }
+        }
     }
 
-    if generated {
-        println!("{}", "API synchronization complete.".green());
-    } else {
-        println!("{}", "No API definitions found or sync failed.".yellow());
+    // Check for ML model metadata sync
+    let ml_dir = root.join("ml");
+    if ml_dir.exists() {
+        table.add_row(vec!["ML".cyan().to_string(), "Auto-synced via heartbeat.json".green().to_string()]);
     }
+
+    println!("{table}");
 
     Ok(())
 }

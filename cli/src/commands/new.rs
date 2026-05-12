@@ -23,7 +23,6 @@ pub fn exec(name: String) -> Result<()> {
 
     let selected_features = MultiSelect::new("Select features to enable:", options)
         .with_vim_mode(true)
-        .with_filter_input_enabled(false)
         .with_help_message("↑↓/jk to move, space to select, enter to confirm")
         .prompt()?;
 

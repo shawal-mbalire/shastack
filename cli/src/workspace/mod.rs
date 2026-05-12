@@ -88,35 +88,6 @@ jobs:
         run: just build
 "#;
 
-const ML_CI_TEMPLATE: &str = r#"name: ML CI
-
-on:
-  push:
-    paths:
-      - 'ml/**'
-  pull_request:
-    paths:
-      - 'ml/**'
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ml
-    steps:
-      - uses: actions/checkout@v4
-      - uses: extractions/setup-just@v2
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - uses: astral-sh/setup-uv@v5
-      - name: Install dependencies and run tests
-        run: |
-          just deps
-          just test
-"#;
-
 const HARDWARE_CI_TEMPLATE: &str = r#"name: Hardware CI
 
 on:
