@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "features": [
     "cli",
-    "landing-page"
+    "frontend",
+    "hardware"
   ]
 }

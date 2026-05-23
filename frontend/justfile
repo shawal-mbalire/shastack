@@ -1,0 +1,17 @@
+set shell := ["bash", "-uc"]
+
+# Install dependencies
+deps:
+    npm install
+
+# Run development server
+dev:
+    npm start
+
+# Run tests
+test:
+    npm test -- --watch=false --browsers=ChromeHeadless
+
+# Build for production
+build:
+    npm run build

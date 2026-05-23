@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "landing-page/dist/shastack/browser",
+    "public": "frontend/dist/shastack/browser",
     "ignore": [
       "firebase.json",
       "**/.*",

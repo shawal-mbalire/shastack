@@ -1,0 +1,17 @@
+set shell := ["bash", "-uc"]
+
+# Install dependencies
+deps:
+    pio pkg install
+
+# Flash firmware to device
+flash:
+    pio run --target upload
+
+# Run tests
+test:
+    pio test
+
+# Build firmware
+build:
+    pio run
