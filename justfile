@@ -64,3 +64,10 @@ fmt:
 # Run clippy
 lint:
     cargo clippy
+
+# --- Deployment ---
+
+# Build and deploy the landing page to Firebase
+deploy-landing:
+    (cd landing-page && npm run build)
+    firebase deploy --only hosting

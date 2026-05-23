@@ -1,8 +1,9 @@
-pub mod scaffold;
-
 use anyhow::Result;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
+
+// --- CI Templates ---
 
 const WEB_CI_TEMPLATE: &str = r#"name: Web CI
 
@@ -171,6 +172,177 @@ jobs:
           just test
 "#;
 
+// --- Justfile Templates ---
+
+const ROOT_JUSTFILE_TEMPLATE: &str = r#"set shell := ["bash", "-uc"]
+
+# --- Global Commands ---
+
+# Install all dependencies for enabled modules
+deps:
+    sha deps
+
+# Run tests for all enabled modules
+test:
+    #!/usr/bin/env bash
+    for dir in */; do
+        if [ -f "$dir/justfile" ]; then
+            echo "Running tests in $dir..."
+            just -f "$dir/justfile" test
+        fi
+    done
+
+# Sync all APIs
+sync-api:
+    sha sync-api
+"#;
+
+const WEB_JUSTFILE_TEMPLATE: &str = r#"set shell := ["bash", "-uc"]
+
+deps:
+    cd client && npm install
+    cd server && uv sync
+
+test:
+    cd client && npm test -- --watch=false --browsers=ChromeHeadless
+    cd server && uv run pytest
+
+run:
+    @echo "Use 'just run-client' or 'just run-server' for specific modules"
+
+run-client:
+    cd client && npm start
+
+run-server:
+    cd server && uv run python main.py
+"#;
+
+const PYTHON_JUSTFILE_TEMPLATE: &str = r#"set shell := ["bash", "-uc"]
+
+deps:
+    uv sync
+
+test:
+    uv run pytest
+
+run:
+    uv run python main.py
+"#;
+
+const ANGULAR_JUSTFILE_TEMPLATE: &str = r#"set shell := ["bash", "-uc"]
+
+deps:
+    npm install
+
+test:
+    npm test -- --watch=false --browsers=ChromeHeadless
+
+run:
+    npm start
+"#;
+
+// --- Scaffolding Struct ---
+
+pub struct Scaffolder;
+
+impl Scaffolder {
+    pub fn angular(dir: &Path) -> Result<()> {
+        let status = Command::new("npx")
+            .arg("@angular/cli@18")
+            .arg("new")
+            .arg("frontend")
+            .arg("--directory")
+            .arg(dir.to_str().unwrap())
+            .arg("--style=scss")
+            .arg("--ssr=false")
+            .arg("--ai-config=none")
+            .arg("--skip-git=true")
+            .arg("--defaults=true")
+            .status()?;
+
+        if !status.success() {
+            return Err(anyhow::anyhow!("Failed to scaffold Angular project"));
+        }
+        Self::write_justfile(dir, ANGULAR_JUSTFILE_TEMPLATE)?;
+        Ok(())
+    }
+
+    pub fn python(dir: &Path, deps: Vec<&str>) -> Result<()> {
+        if !dir.exists() {
+            fs::create_dir_all(dir)?;
+        }
+        
+        let status = Command::new("uv")
+            .arg("init")
+            .current_dir(dir)
+            .status()?;
+
+        if !status.success() {
+            return Err(anyhow::anyhow!("Failed to initialize Python project with uv"));
+        }
+
+        if !deps.is_empty() {
+            let status = Command::new("uv")
+                .arg("add")
+                .args(deps)
+                .current_dir(dir)
+                .status()?;
+            if !status.success() {
+                return Err(anyhow::anyhow!("Failed to add dependencies with uv"));
+            }
+        }
+        Self::write_justfile(dir, PYTHON_JUSTFILE_TEMPLATE)?;
+        Ok(())
+    }
+
+    pub fn flutter(dir: &Path) -> Result<()> {
+        let status = Command::new("flutter")
+            .arg("create")
+            .arg("--project-name=app")
+            .arg(".")
+            .current_dir(dir)
+            .status()?;
+
+        if !status.success() {
+            return Err(anyhow::anyhow!("Failed to scaffold Flutter project"));
+        }
+        Ok(())
+    }
+
+    pub fn research(dir: &Path) -> Result<()> {
+        let src_dir = dir.join("src");
+        fs::create_dir_all(&src_dir)?;
+        fs::write(
+            src_dir.join("main.tex"),
+            r#"\documentclass{article}
+\begin{titlepage}
+\title{Research Paper}
+\author{shastack}
+\end{titlepage}
+\begin{document}
+\maketitle
+\section{Introduction}
+Hello from shastack!
+\end{document}"#,
+        )?;
+        Self::write_justfile(
+            dir,
+            r#"set shell := ["bash", "-uc"]
+build:
+    pdflatex -output-directory=../artifacts src/main.tex
+"#,
+        )?;
+        Ok(())
+    }
+
+    pub fn write_justfile(dir: &Path, content: &str) -> Result<()> {
+        fs::write(dir.join("justfile"), content)?;
+        Ok(())
+    }
+}
+
+// --- Workspace Logic ---
+
 pub fn find_root() -> Result<PathBuf> {
     let mut current = std::env::current_dir()?;
     loop {
@@ -199,10 +371,7 @@ pub fn add_feature(root: &Path, feature: &str) -> Result<()> {
     }
 
     features.push(serde_json::json!(feature));
-
-    // Create feature directory
     create_feature_dir(root, feature)?;
-
     fs::write(config_path, serde_json::to_string_pretty(&manifest)?)?;
 
     Ok(())
@@ -211,55 +380,42 @@ pub fn add_feature(root: &Path, feature: &str) -> Result<()> {
 pub fn create_feature_dir(root: &Path, feature: &str) -> Result<()> {
     let feature_path = match feature {
         "web" | "Web Frontend (Angular)" | "Web Backend (Flask)" => {
-            fs::create_dir_all(root.join("web/client"))?;
-            fs::create_dir_all(root.join("web/server"))?;
-            if feature == "Web Frontend (Angular)" {
-                scaffold::scaffold_web_client(root)?;
-            } else if feature == "Web Backend (Flask)" {
-                scaffold::scaffold_flask(root)?;
-            } else {
-                scaffold::scaffold_web(root)?;
+            let web_root = root.join("web");
+            fs::create_dir_all(&web_root)?;
+            
+            if feature == "Web Frontend (Angular)" || feature == "web" {
+                Scaffolder::angular(&web_root.join("client"))?;
             }
+            
+            if feature == "Web Backend (Flask)" || feature == "web" {
+                Scaffolder::python(&web_root.join("server"), vec!["flask", "flask-cors", "pydantic", "python-dotenv"])?;
+            }
+            
+            Scaffolder::write_justfile(&web_root, WEB_JUSTFILE_TEMPLATE)?;
             "web"
         }
         "landing" | "Landing Page (Angular)" => {
-            fs::create_dir_all(root.join("landing"))?;
-            scaffold::scaffold_landing(root)?;
+            Scaffolder::angular(&root.join("landing"))?;
             "landing"
         }
         "mobile" | "Mobile App (Flutter)" => {
-            fs::create_dir_all(root.join("mobile/app"))?;
-            scaffold::scaffold_mobile(root)?;
+            let mobile_root = root.join("mobile/app");
+            fs::create_dir_all(&mobile_root)?;
+            Scaffolder::flutter(&mobile_root)?;
             "mobile"
         }
         "research" | "Research (LaTeX)" => {
-            fs::create_dir_all(root.join("research/src"))?;
-            fs::create_dir_all(root.join("research/artifacts"))?;
-            scaffold::scaffold_research(root)?;
+            let research_root = root.join("research");
+            fs::create_dir_all(&research_root)?;
+            Scaffolder::research(&research_root)?;
             "research"
         }
         "ml" | "ML (Python/Notebooks)" => {
-            fs::create_dir_all(root.join("ml/notebooks"))?;
-            fs::create_dir_all(root.join("ml/src"))?;
-            fs::create_dir_all(root.join("ml/model_registry"))?;
-            scaffold::scaffold_ml(root)?;
+            Scaffolder::python(&root.join("ml"), vec!["polars", "scikit-learn", "numpy", "pydantic", "huggingface-hub", "jupyter", "nbdev"])?;
             "ml"
         }
-        "hardware" | "Hardware (Arduino/C++)" => {
-            scaffold::scaffold_arduino(root)?;
-            "hardware"
-        }
-        "Hardware (MicroPython/uv)" => {
-            scaffold::scaffold_micropython(root)?;
-            "hardware"
-        }
-        "Hardware (Embedded Rust)" => {
-            scaffold::scaffold_rust_embedded(root)?;
-            "hardware"
-        }
-        "Hardware (Firmware)" => {
-            fs::create_dir_all(root.join("hardware/src"))?;
-            scaffold::scaffold_hardware(root)?;
+        "hardware" | "Hardware (Arduino/C++)" | "Hardware (MicroPython/uv)" | "Hardware (Embedded Rust)" => {
+            fs::create_dir_all(root.join("hardware"))?;
             "hardware"
         }
         _ => {
@@ -375,19 +531,30 @@ pub fn set_env(root: &Path, key: &str, value: &str) -> Result<()> {
 }
 
 pub fn init(name: &str, features: Vec<&str>) -> Result<()> {
-    let root = Path::new(name);
-    if root.exists() {
-        return Err(anyhow::anyhow!("Directory {} already exists", name));
-    }
+    let root = if name == "." {
+        std::env::current_dir()?
+    } else {
+        let p = PathBuf::from(name);
+        if p.exists() && fs::read_dir(&p)?.next().is_some() {
+            return Err(anyhow::anyhow!("Directory {} already exists and is not empty", name));
+        }
+        fs::create_dir_all(&p)?;
+        p
+    };
 
-    fs::create_dir_all(root)?;
+    let workspace_name = if name == "." {
+        root.file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("unnamed-workspace")
+            .to_string()
+    } else {
+        name.to_string()
+    };
 
-    // Create .sha directory
     fs::create_dir_all(root.join(".sha"))?;
 
-    // Create feature manifest
     let manifest = serde_json::json!({
-        "name": name,
+        "name": workspace_name,
         "version": "0.1.0",
         "features": features,
     });
@@ -396,22 +563,8 @@ pub fn init(name: &str, features: Vec<&str>) -> Result<()> {
         serde_json::to_string_pretty(&manifest)?,
     )?;
 
-    // Create root justfile
-    let justfile_content = r#"set shell := ["bash", "-uc"]
+    fs::write(root.join("justfile"), ROOT_JUSTFILE_TEMPLATE)?;
 
-# --- Global Commands ---
-
-# Install project-wide and system-wide dependencies
-deps:
-    sha deps
-    @echo "Installing module dependencies..."
-
-test:
-    @echo "Running tests..."
-"#;
-    fs::write(root.join("justfile"), justfile_content)?;
-
-    // Create root CI coordinator
     let root_ci_dir = root.join(".github/workflows");
     fs::create_dir_all(&root_ci_dir)?;
     let root_ci_content = r#"name: Global CI Coordinator
@@ -432,15 +585,11 @@ jobs:
 "#;
     fs::write(root_ci_dir.join("main.yml"), root_ci_content)?;
 
-    // Create feature directories
     for feature in features {
-        create_feature_dir(root, feature)?;
+        create_feature_dir(&root, feature)?;
     }
 
-    // Create shared directory
     fs::create_dir_all(root.join("shared"))?;
-
-    // Create .env.sha
     fs::write(root.join(".env.sha"), "# shastack secrets\n")?;
 
     Ok(())
@@ -457,37 +606,21 @@ mod tests {
         let workspace_path = dir.path().join("test_ws");
         let workspace_name = workspace_path.to_str().unwrap();
 
+        // Use features that are fast or manual for testing
         init(
             workspace_name,
-            vec!["Web Frontend (Angular)", "Research (LaTeX)"],
+            vec!["Research (LaTeX)"],
         )?;
 
         assert!(workspace_path.exists());
         assert!(workspace_path.join(".sha/config.json").exists());
-        assert!(workspace_path.join("web/client").exists());
-        assert!(workspace_path.join("web/client/package.json").exists());
-        assert!(workspace_path.join("web/server/src/index.ts").exists());
         assert!(workspace_path.join("research/src").exists());
-        assert!(workspace_path.join("research/main.tex").exists());
         assert!(workspace_path.join(".github/workflows/main.yml").exists());
-        assert!(
-            workspace_path
-                .join("web/.github/workflows/main.yml")
-                .exists()
-        );
         assert!(
             workspace_path
                 .join("research/.github/workflows/main.yml")
                 .exists()
         );
-
-        let web_ci = fs::read_to_string(workspace_path.join("web/.github/workflows/main.yml"))?;
-        let research_ci =
-            fs::read_to_string(workspace_path.join("research/.github/workflows/main.yml"))?;
-        assert!(web_ci.contains("web/**"));
-        assert!(web_ci.contains("just deps"));
-        assert!(research_ci.contains("research/**"));
-        assert!(research_ci.contains("just build"));
 
         Ok(())
     }
@@ -498,55 +631,15 @@ mod tests {
         let workspace_path = dir.path().join("test_add_ws");
         let workspace_name = workspace_path.to_str().unwrap();
 
-        init(workspace_name, vec!["Web Frontend (Angular)"])?;
+        init(workspace_name, vec![])?;
         add_feature(&workspace_path, "Research (LaTeX)")?;
 
         let config_path = workspace_path.join(".sha/config.json");
         let manifest: serde_json::Value = serde_json::from_str(&fs::read_to_string(config_path)?)?;
         let features = manifest["features"].as_array().unwrap();
 
-        assert!(features.contains(&serde_json::json!("Web Frontend (Angular)")));
         assert!(features.contains(&serde_json::json!("Research (LaTeX)")));
         assert!(workspace_path.join("research/src").exists());
-        assert!(workspace_path.join("research/main.tex").exists());
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_feature_specific_scaffolds() -> Result<()> {
-        let dir = tempdir()?;
-        let workspace_path = dir.path().join("test_feature_scaffolds");
-        let workspace_name = workspace_path.to_str().unwrap();
-
-        init(
-            workspace_name,
-            vec![
-                "Mobile App (Flutter)",
-                "ML (Python/Notebooks)",
-                "Hardware (Firmware)",
-            ],
-        )?;
-
-        assert!(workspace_path.join("mobile/app/pubspec.yaml").exists());
-        assert!(
-            workspace_path
-                .join("mobile/app/test/widget_test.dart")
-                .exists()
-        );
-        assert!(workspace_path.join("ml/pyproject.toml").exists());
-        assert!(workspace_path.join("ml/notebooks/01_eda.ipynb").exists());
-        assert!(workspace_path.join("ml/tests/test_smoke.py").exists());
-        assert!(workspace_path.join("hardware/platformio.ini").exists());
-        assert!(workspace_path.join("hardware/src/main.cpp").exists());
-
-        let ml_ci = fs::read_to_string(workspace_path.join("ml/.github/workflows/main.yml"))?;
-        let hardware_ci =
-            fs::read_to_string(workspace_path.join("hardware/.github/workflows/main.yml"))?;
-        assert!(ml_ci.contains("ml/**"));
-        assert!(ml_ci.contains("just test"));
-        assert!(hardware_ci.contains("hardware/**"));
-        assert!(hardware_ci.contains("pio run"));
 
         Ok(())
     }

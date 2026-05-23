@@ -5,19 +5,28 @@ import { FeaturesComponent } from './components/features/features.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { HeaderComponent } from './components/header/header.component';
 import { HeroComponent } from './components/hero/hero.component';
+import { PrerequisitesComponent } from './components/prerequisites/prerequisites.component';
 
 type Theme = 'light' | 'dark';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [HeaderComponent, HeroComponent, FeaturesComponent, CommandsComponent, FooterComponent],
+  imports: [
+    HeaderComponent,
+    HeroComponent,
+    FeaturesComponent,
+    PrerequisitesComponent,
+    CommandsComponent,
+    FooterComponent
+  ],
   template: `
     <div class="app-shell">
       <app-header [theme]="theme()" (toggleTheme)="toggleTheme()"></app-header>
       <main>
         <app-hero></app-hero>
         <app-features></app-features>
+        <app-prerequisites></app-prerequisites>
         <app-commands></app-commands>
       </main>
       <app-footer></app-footer>
