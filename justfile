@@ -13,7 +13,7 @@ deps:
 
 # Run tests across all modules
 test:
-    @for dir in cli frontend hardware; do \
+    @for dir in cli frontend; do \
         if [ -d "$dir" ] && [ -f "$dir/justfile" ]; then \
             echo "Testing $dir..."; \
             just -f "$dir/justfile" test; \
@@ -23,10 +23,6 @@ test:
 # Run development server for the frontend
 dev:
     (cd frontend && just dev)
-
-# Flash firmware to hardware
-flash:
-    (cd hardware && just flash)
 
 # --- CLI Development ---
 
