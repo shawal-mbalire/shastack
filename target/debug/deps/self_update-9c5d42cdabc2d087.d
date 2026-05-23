@@ -1,0 +1,16 @@
+/home/shawal/GitHub/shastack/target/debug/deps/self_update-9c5d42cdabc2d087.d: /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/lib.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/macros.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/mod.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/gitea.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/github.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/gitlab.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/s3.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/errors.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/update.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/version.rs
+
+/home/shawal/GitHub/shastack/target/debug/deps/libself_update-9c5d42cdabc2d087.rmeta: /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/lib.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/macros.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/mod.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/gitea.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/github.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/gitlab.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/s3.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/errors.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/update.rs /home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/version.rs
+
+/home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/lib.rs:
+/home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/macros.rs:
+/home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/mod.rs:
+/home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/gitea.rs:
+/home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/github.rs:
+/home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/gitlab.rs:
+/home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/backends/s3.rs:
+/home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/errors.rs:
+/home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/update.rs:
+/home/shawal/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/self_update-0.41.0/src/version.rs:
+
+# env-dep:TARGET=x86_64-unknown-linux-gnu

@@ -32,11 +32,23 @@ flash:
 
 # Build the sha CLI
 build-cli:
-    cargo build -p sha
+    (cd cli && cargo build)
+
+# Check the CLI for errors
+check-cli:
+    (cd cli && cargo check)
 
 # Install the sha CLI locally
 install:
     cargo install --path cli
+
+# Run clippy for the CLI
+lint:
+    (cd cli && cargo clippy)
+
+# Format CLI code
+fmt:
+    (cd cli && cargo fmt)
 
 # --- Deployment ---
 

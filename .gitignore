@@ -1,4 +1,4 @@
-/target
+cli/target
 .firebase/
 frontend/.angular/
 frontend/dist/
