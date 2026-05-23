@@ -78,6 +78,16 @@ pre {
     'Courier New', monospace;
 }
 
+lucide-icon {
+  display: inline-flex;
+  align-self: center;
+  line-height: 0;
+
+  svg {
+    display: block;
+  }
+}
+
 ::selection {
   background: rgba(59, 130, 246, 0.18);
 }
