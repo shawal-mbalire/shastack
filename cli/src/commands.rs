@@ -280,7 +280,14 @@ impl UpdateCommand {
                 status.update()?;
                 println!("{}", "Successfully upgraded to latest version!".green());
                 std::process::exit(0);
+            } else {
+                println!("{}", "Upgrade skipped.".yellow());
             }
+        } else {
+            println!(
+                "{}",
+                format!("sha is already up to date (v{}).", current_version).green()
+            );
         }
 
         Ok(())
