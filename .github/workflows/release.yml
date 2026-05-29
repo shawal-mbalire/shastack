@@ -123,19 +123,19 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            cli/target
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('cli/Cargo.lock') }}
 
-      - run: cargo build --release --target ${{ matrix.target }} -p sha
+      - run: cargo build --release --target ${{ matrix.target }} --manifest-path cli/Cargo.toml
 
       - name: Rename binary (Unix)
         if: matrix.os != 'windows-latest'
-        run: cp target/${{ matrix.target }}/release/sha ${{ matrix.artifact }}
+        run: cp cli/target/${{ matrix.target }}/release/sha ${{ matrix.artifact }}
 
       - name: Rename binary (Windows)
         if: matrix.os == 'windows-latest'
         shell: pwsh
-        run: Copy-Item "target/${{ matrix.target }}/release/sha.exe" "${{ matrix.artifact }}"
+        run: Copy-Item "cli/target/${{ matrix.target }}/release/sha.exe" "${{ matrix.artifact }}"
 
       - uses: actions/upload-artifact@v4
         with:
