@@ -41,7 +41,7 @@ pub enum Commands {
         #[arg(value_parser = ["major", "minor", "patch", "auto"])]
         component: Option<String>,
     },
-    /// Manages project-wide environment variables
+    /// Manages project-wide environment variables via envchain (keychain-backed, no .env files)
     Env {
         #[command(subcommand)]
         action: EnvAction,

@@ -1,5 +1,7 @@
 use anyhow::Result;
+use colored::Colorize;
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -469,64 +471,199 @@ pub fn set_version(root: &Path, version: &Version) -> Result<()> {
     Ok(())
 }
 
-pub fn get_env(root: &Path, key: &str) -> Result<Option<String>> {
-    let env_path = root.join(".env.sha");
-    if !env_path.exists() {
-        return Ok(None);
+// --- envchain-backed environment management ---
+
+pub fn envchain_namespace(root: &Path) -> Result<String> {
+    let config_path = root.join(".sha/config.json");
+    let manifest: serde_json::Value = serde_json::from_str(&fs::read_to_string(config_path)?)?;
+    let name = manifest["name"].as_str().unwrap_or("shastack");
+    Ok(format!("shastack-{}", name))
+}
+
+/// Path to the key index file (key names only, not values)
+fn env_keys_path(root: &Path) -> PathBuf {
+    root.join(".sha/env-keys.json")
+}
+
+/// Load the list of known env key names from the index
+fn load_env_keys(root: &Path) -> Result<Vec<String>> {
+    let path = env_keys_path(root);
+    if !path.exists() {
+        return Ok(Vec::new());
     }
-    let content = fs::read_to_string(env_path)?;
+    let content = fs::read_to_string(path)?;
+    let keys: Vec<String> = serde_json::from_str(&content)?;
+    Ok(keys)
+}
+
+/// Save the list of known env key names to the index
+fn save_env_keys(root: &Path, keys: &[String]) -> Result<()> {
+    let path = env_keys_path(root);
+    let parent = path.parent().unwrap();
+    fs::create_dir_all(parent)?;
+    fs::write(path, serde_json::to_string_pretty(keys)?)?;
+    Ok(())
+}
+
+/// Add a key name to the index (duplicate-safe)
+fn add_env_key(root: &Path, key: &str) -> Result<()> {
+    let mut keys = load_env_keys(root)?;
+    if !keys.contains(&key.to_string()) {
+        keys.push(key.to_string());
+        save_env_keys(root, &keys)?;
+    }
+    Ok(())
+}
+
+/// Remove a key name from the index
+#[allow(dead_code)]
+fn remove_env_key(root: &Path, key: &str) -> Result<()> {
+    let mut keys = load_env_keys(root)?;
+    keys.retain(|k| k != key);
+    save_env_keys(root, &keys)?;
+    Ok(())
+}
+
+/// Migrate environment variables from .env.sha to envchain
+/// Called automatically on first `sha env` operation if .env.sha exists
+pub fn migrate_from_env_sha(root: &Path) -> Result<()> {
+    let env_sha_path = root.join(".env.sha");
+    if !env_sha_path.exists() {
+        return Ok(());
+    }
+
+    let content = fs::read_to_string(&env_sha_path)?;
+    let has_content = content.lines().any(|line| {
+        let t = line.trim();
+        !t.is_empty() && !t.starts_with('#') && t.contains('=')
+    });
+
+    if !has_content {
+        // Empty or comment-only file, just remove it
+        let _ = fs::remove_file(&env_sha_path);
+        return Ok(());
+    }
+
+    println!("{}", "Migrating secrets from .env.sha to envchain...".yellow());
+
     for line in content.lines() {
+        let line = line.trim();
+        if line.starts_with('#') || line.is_empty() || !line.contains('=') {
+            continue;
+        }
         if let Some((k, v)) = line.split_once('=') {
-            if k.trim() == key {
-                return Ok(Some(v.trim().to_string()));
+            let key = k.trim();
+            let value = v.trim();
+            if !key.is_empty() {
+                set_env(root, key, value)?;
             }
         }
     }
-    Ok(None)
+
+    // Rename old file as backup (user can delete manually)
+    let backup = root.join(".env.sha.migrated");
+    fs::rename(&env_sha_path, &backup)?;
+    println!(
+        "{}",
+        format!("Migration complete. Old file backed up to {:?}", backup).green()
+    );
+
+    Ok(())
 }
 
+/// Check if envchain is available on the system
+fn check_envchain() -> Result<()> {
+    let status = Command::new("envchain")
+        .arg("--help")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status();
+
+    match status {
+        Ok(s) if s.success() => Ok(()),
+        _ => Err(anyhow::anyhow!(
+            "envchain is not installed. Install it with: brew install envchain (macOS) or your package manager (Linux)"
+        )),
+    }
+}
+
+/// Get an environment variable from the envchain keychain
+pub fn get_env(root: &Path, key: &str) -> Result<Option<String>> {
+    check_envchain()?;
+    let _ = migrate_from_env_sha(root);
+
+    let namespace = envchain_namespace(root)?;
+
+    let output = Command::new("envchain")
+        .args(["--no-require-passphrase", &namespace, "printenv", key])
+        .output()?;
+
+    if output.status.success() {
+        let value = String::from_utf8(output.stdout)?.trim().to_string();
+        Ok(Some(value))
+    } else {
+        Ok(None)
+    }
+}
+
+/// List all environment variables stored in envchain for this workspace
 pub fn list_envs(root: &Path) -> Result<Vec<(String, String)>> {
-    let env_path = root.join(".env.sha");
-    if !env_path.exists() {
-        return Ok(Vec::new());
-    }
-    let content = fs::read_to_string(env_path)?;
+    check_envchain()?;
+    let _ = migrate_from_env_sha(root);
+
+    let namespace = envchain_namespace(root)?;
+
+    // Read key names from the index, then fetch each value from the keychain
+    let keys = load_env_keys(root)?;
     let mut envs = Vec::new();
-    for line in content.lines() {
-        if let Some((k, v)) = line.split_once('=') {
-            envs.push((k.trim().to_string(), v.trim().to_string()));
+
+    for key in &keys {
+        let output = Command::new("envchain")
+            .args(["--no-require-passphrase", &namespace, "printenv", key])
+            .output()?;
+
+        if output.status.success() {
+            let value = String::from_utf8(output.stdout)?.trim().to_string();
+            envs.push((key.clone(), value));
         }
+        // Skip missing keys silently (may have been removed from keychain externally)
     }
+
     Ok(envs)
 }
 
+/// Set an environment variable in the envchain keychain
 pub fn set_env(root: &Path, key: &str, value: &str) -> Result<()> {
-    let env_path = root.join(".env.sha");
-    let mut lines: Vec<String> = if env_path.exists() {
-        fs::read_to_string(&env_path)?
-            .lines()
-            .map(|s| s.to_string())
-            .collect()
-    } else {
-        Vec::new()
-    };
+    check_envchain()?;
+    let _ = migrate_from_env_sha(root);
 
-    let mut found = false;
-    for line in lines.iter_mut() {
-        if let Some((k, _)) = line.split_once('=') {
-            if k.trim() == key {
-                *line = format!("{}={}", key, value);
-                found = true;
-                break;
-            }
+    let namespace = envchain_namespace(root)?;
+
+    let mut child = Command::new("envchain")
+        .args(["--set", "--no-require-passphrase", &namespace, key])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .map_err(|e| anyhow::anyhow!("Failed to run envchain: {}. Is envchain installed?", e))?;
+
+    // Pipe the value into envchain's stdin
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin.write_all(value.as_bytes())?;
+        // Drop stdin so envchain can finish reading
+        drop(stdin);
+    }
+
+    let output = child.wait_with_output()?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        // envchain may still succeed with warnings; only fail on hard error
+        if stderr.contains("failed") || stderr.contains("error") {
+            return Err(anyhow::anyhow!("envchain set failed: {}", stderr.trim()));
         }
     }
 
-    if !found {
-        lines.push(format!("{}={}", key, value));
-    }
-
-    fs::write(env_path, lines.join("\n") + "\n")?;
+    add_env_key(root, key)?;
     Ok(())
 }
 
@@ -590,7 +727,6 @@ jobs:
     }
 
     fs::create_dir_all(root.join("shared"))?;
-    fs::write(root.join(".env.sha"), "# shastack secrets\n")?;
 
     Ok(())
 }
@@ -621,6 +757,7 @@ mod tests {
                 .join("research/.github/workflows/main.yml")
                 .exists()
         );
+        assert!(!workspace_path.join(".env.sha").exists(), ".env.sha should NOT be created; envchain is used instead");
 
         Ok(())
     }
@@ -662,6 +799,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires envchain to be installed with a keychain backend (gnome-keyring/macOS Keychain)"]
     fn test_env_management() -> Result<()> {
         let dir = tempdir()?;
         let workspace_path = dir.path().join("test_env_ws");
