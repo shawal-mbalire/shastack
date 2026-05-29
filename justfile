@@ -2,10 +2,16 @@ set shell := ["bash", "-uc"]
 
 # --- Global Commands ---
 
-# Setup system tools and restore workspace structure
+# Setup system tools, hooks, and restore workspace structure
 setup:
     sha deps
+    just setup-hooks
     sha restore
+
+# Install git hooks to enforce conventional commits
+setup-hooks:
+    git config core.hooksPath .githooks
+    @echo "Git hooks installed from .githooks/"
 
 # Install all dependencies across the workspace
 deps:

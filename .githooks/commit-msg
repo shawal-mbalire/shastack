@@ -1,0 +1,52 @@
+#!/bin/sh
+# Enforce conventional commit format (https://www.conventionalcommits.org)
+# Installed via: git config core.hooksPath .githooks
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Allow merge commits, revert commits, and git-generated messages
+case "$COMMIT_MSG" in
+  "Merge "*|"merge "*|"Revert "*|"revert "*|"Updates for "*|"Applied "*)
+    exit 0
+    ;;
+esac
+
+# Conventional commit pattern:
+#   type(scope)!: description
+#   type: description
+# Valid types: feat, fix, chore, docs, refactor, test, ci, style, perf, build, revert
+TYPE='(feat|fix|chore|docs|refactor|test|ci|style|perf|build|revert)'
+SCOPE='(\([a-zA-Z0-9._/-]+\))?'
+BREAKING='(!)?'
+PATTERN="^${TYPE}${SCOPE}${BREAKING}:\s.+"
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+  echo ""
+  echo "  \033[31mERROR: Commit does not follow Conventional Commits format.\033[0m"
+  echo ""
+  echo "  Expected: \033[33mtype(scope)!: description\033[0m"
+  echo ""
+  echo "  Valid types:"
+  echo "    \033[36mfeat\033[0m       A new feature (→ minor bump)"
+  echo "    \033[36mfix\033[0m        A bug fix (→ patch bump)"
+  echo "    \033[36mchore\033[0m      Maintenance tasks"
+  echo "    \033[36mdocs\033[0m       Documentation changes"
+  echo "    \033[36mrefactor\033[0m   Code refactoring"
+  echo "    \033[36mtest\033[0m       Adding or fixing tests"
+  echo "    \033[36mci\033[0m         CI/CD changes"
+  echo "    \033[36mstyle\033[0m      Code style/formatting"
+  echo "    \033[36mperf\033[0m       Performance improvements"
+  echo "    \033[36mbuild\033[0m      Build system changes"
+  echo "    \033[36mrevert\033[0m     Reverting a previous commit"
+  echo ""
+  echo "  Examples:"
+  echo "    \033[32mfeat: add login page\033[0m"
+  echo "    \033[32mfix(auth): handle token expiry\033[0m"
+  echo "    \033[32mfeat(api)!: drop v1 endpoints\033[0m"
+  echo "    \033[32mchore: bump deps\033[0m"
+  echo ""
+  printf "  Got: \033[31m%s\033[0m\n" "$COMMIT_MSG"
+  echo ""
+  exit 1
+fi

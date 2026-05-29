@@ -2,14 +2,92 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version override (e.g., v0.2.0). Leave empty for auto-detection from conventional commits."
+        required: false
+        type: string
 
 permissions:
   contents: write
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      new_tag: ${{ steps.determine.outputs.new_tag }}
+      should_release: ${{ steps.determine.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine next version from conventional commits
+        id: determine
+        run: |
+          # Manual override from workflow_dispatch
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.version }}" ]; then
+            echo "new_tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git fetch --tags --force
+
+          last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          # First release — start at v0.1.0
+          if [ -z "$last_tag" ]; then
+            echo "new_tag=v0.1.0" >> "$GITHUB_OUTPUT"
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Analyse conventional commits since last tag
+          bump="patch"
+          while IFS= read -r msg; do
+            if echo "$msg" | grep -qE 'BREAKING CHANGE|!:'; then
+              bump="major"
+            elif echo "$msg" | grep -qE '^feat' && [ "$bump" != "major" ]; then
+              bump="minor"
+            fi
+          done < <(git log "$last_tag..HEAD" --pretty=format:"%s" 2>/dev/null || echo "")
+
+          # Bump semver
+          current="${last_tag#v}"
+          IFS='.' read -r major minor patch <<< "$current"
+          major=${major:-0}; minor=${minor:-0}; patch=${patch:-0}
+
+          case "$bump" in
+            major) major=$((major+1)); minor=0; patch=0 ;;
+            minor) minor=$((minor+1)); patch=0 ;;
+            patch) patch=$((patch+1)) ;;
+          esac
+          new_tag="v${major}.${minor}.${patch}"
+
+          echo "new_tag=${new_tag}" >> "$GITHUB_OUTPUT"
+
+          # Only release if there are new commits since the last tag
+          commit_count=$(git log "$last_tag..HEAD" --oneline 2>/dev/null | wc -l)
+          if [ "$commit_count" -gt 0 ]; then
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create and push tag
+        if: steps.determine.outputs.should_release == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.determine.outputs.new_tag }}" -m "chore(release): ${{ steps.determine.outputs.new_tag }}"
+          git push origin "${{ steps.determine.outputs.new_tag }}"
+
   build:
+    needs: version
+    if: needs.version.outputs.should_release == 'true'
     name: Build ${{ matrix.artifact }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -32,8 +110,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
@@ -41,8 +118,7 @@ jobs:
         if: matrix.target == 'x86_64-unknown-linux-musl'
         run: sudo apt-get install -y musl-tools
 
-      - name: Cache Cargo registry
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -50,8 +126,7 @@ jobs:
             target
           key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }} -p sha
+      - run: cargo build --release --target ${{ matrix.target }} -p sha
 
       - name: Rename binary (Unix)
         if: matrix.os != 'windows-latest'
@@ -62,27 +137,27 @@ jobs:
         shell: pwsh
         run: Copy-Item "target/${{ matrix.target }}/release/sha.exe" "${{ matrix.artifact }}"
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}
 
   release:
     name: Create GitHub Release
-    needs: build
+    needs: [version, build]
+    if: needs.version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
 
-      - name: Create release
-        uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2
         with:
+          name: ${{ needs.version.outputs.new_tag }}
+          tag_name: ${{ needs.version.outputs.new_tag }}
           files: artifacts/*
           generate_release_notes: true
