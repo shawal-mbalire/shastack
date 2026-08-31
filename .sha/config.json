@@ -1,8 +1,36 @@
 {
   "name": "shastack",
-  "version": "0.2.1",
+  "version": "1.0.0",
   "features": [
     "cli",
-    "frontend"
-  ]
+    "frontend",
+    "landing",
+    "docs"
+  ],
+  "modules": {
+    "cli": {
+      "path": "cli",
+      "type": "rust",
+      "description": "The sha CLI binary"
+    },
+    "frontend": {
+      "path": "frontend",
+      "type": "angular",
+      "description": "Angular frontend application"
+    },
+    "landing": {
+      "path": "landing",
+      "type": "angular",
+      "description": "Public landing page"
+    },
+    "docs": {
+      "path": "docs",
+      "type": "markdown",
+      "description": "Project documentation"
+    }
+  },
+  "cross_module": {
+    "event_bus": "shared/events",
+    "protocol": "json-schema"
+  }
 }

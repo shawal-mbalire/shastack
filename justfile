@@ -52,9 +52,26 @@ lint:
 fmt:
     (cd cli && cargo fmt)
 
+# Run all benchmarks
+bench:
+    (cd cli && cargo bench)
+
+# Run security audit
+audit:
+    cargo audit --manifest-path cli/Cargo.toml || echo "Install cargo-audit: cargo install cargo-audit"
+
 # --- Deployment ---
 
 # Build and deploy the frontend to Firebase
 deploy:
     (cd frontend && just build)
     firebase deploy --only hosting
+
+# --- Documentation ---
+
+# Open documentation
+docs:
+    @echo "Documentation available in docs/"
+    @echo "  - docs/getting-started.md"
+    @echo "  - docs/cli-reference.md"
+    @echo "  - docs/architecture.md"

@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "shastack Event",
+  "description": "Event schema for cross-module communication",
+  "type": "object",
+  "required": ["event", "source", "timestamp"],
+  "properties": {
+    "event": {
+      "type": "string",
+      "description": "Event type identifier",
+      "examples": [
+        "model.trained",
+        "model.deployed",
+        "web.deployed",
+        "api.synced",
+        "research.built",
+        "hardware.flashed",
+        "version.bumped",
+        "deps.installed",
+        "tests.passed",
+        "security.audit"
+      ]
+    },
+    "source": {
+      "type": "string",
+      "description": "Source module that emitted the event",
+      "enum": ["cli", "web", "landing", "mobile", "research", "ml", "hardware", "shared"]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "data": {
+      "type": "object",
+      "description": "Event payload",
+      "additionalProperties": true
+    }
+  }
+}
